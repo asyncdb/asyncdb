@@ -1,7 +1,10 @@
 package io.asyncdb
 
-
 import cats.effect.IO
+import java.net.InetSocketAddress
+import java.nio.channels.AsynchronousChannelGroup
+import fs2._
+
 
 /**
 * A database connection, send an statement or query, returns an IO
@@ -11,6 +14,14 @@ trait Conn[R] {
   def sendPreparedStatement(stmt: String, params: List[Any]): IO[R]
 }
 
-trait StreamConn[R] extends Conn[R] {
+object Conn {
 
+  case class Config(
+    address: String,
+    group: AsynchronousChannelGroup
+  )
+
+  def connect[A](config: Config)(setup: IO[Unit], loop: Stream[IO, A]) = {
+
+  }
 }
