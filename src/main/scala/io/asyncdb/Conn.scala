@@ -24,32 +24,28 @@ object Conn {
   case class Config(
     server: InetSocketAddress,
     group: AsynchronousChannelGroup,
-    threadPool: ExecutorService,
-    queueSize: Int
+    threadPool: ExecutorService
   )
 
-  def connect[I, O](config: Config)(setup: tcp.Socket[IO] => IO[Unit], encode: I => tcp.Socket[IO] => IO[O]) = {
+  def connect[I, O](config: Config)(encode: I => tcp.Socket[IO] => IO[O], queue: Queue[IO, tcp.Socket[IO] => IO[Unit]]) = {
 
     implicit val AG = AsynchronousChannelGroup.withThreadPool(config.threadPool)
     implicit val EC = ExecutionContext.fromExecutorService(config.threadPool)
 
-    Queue.unbounded[IO, tcp.Socket[IO] => IO[O]].map { queue =>
+    val clientLoop = tcp.client[IO](config.server).flatMap { socket =>
+      def loop(): Stream[IO, Unit] = Stream.eval(queue.dequeue1.flatMap(_(socket))) ++ loop()
+      loop()
+    }
 
-      val clientLoop = tcp.client[IO](config.server).flatMap { socket =>
-        Stream.eval(setup(socket)) ++ queue.dequeue.evalMap { f =>
-          f(socket)
-        }
-      }
-
+    clientLoop.run.map { l =>
       new Conn[I, O] {
-        def send(cmd: I): IO[O] = IO.async { (cb) =>
-          def encodeIO(cmd: I)(socket: tcp.Socket[IO]) = {
-            encode(cmd)(socket).map(o => cb(Right(o)))
+        def send(cmd: I): IO[O] = IO.async { cb =>
+          def ei(i: I)(s: tcp.Socket[IO]) = {
+            encode(i)(s).attempt.map(cb)
           }
-        }
-        clientLoop.run.unsafeRunAsync { r =>
+          queue.enqueue1(ei(cmd))
         }
       }
-    }.unsafeRunSync
+    }
   }
 }
