@@ -31,8 +31,6 @@ trait NioConn extends Conn {
     }
   }
 
-  def read(buf: ByteBuffer)
-
   def close: IO[Unit] = {
     IO.async { cb =>
       E.submit(new Runnable {
