@@ -12,9 +12,6 @@ trait Conn {
   def close: IO[Unit]
 }
 
-
-
-
 trait NioConn extends Conn {
   val E: ExecutorService
   val channel: AsynchronousSocketChannel
