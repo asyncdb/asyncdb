@@ -1,6 +1,6 @@
-name := "fs2-db"
+name := "asyncdb"
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.12.3"
 
 val fs2Version = "0.10.0-M2"
 

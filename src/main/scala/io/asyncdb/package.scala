@@ -1,9 +1,9 @@
 package io
 
 import cats.data._
-import cats.effect.IO
+import cats.effect._
 
 package object asyncdb {
-  type Read[Buf, A] = Kleisli[IO, Buf, A]
-  type Write[Buf, A] = Kleisli[IO, (Buf, A), Unit]
+  type Reads[A] = ReaderT[IO, Socket, A]
+  type Writes[A] = WriterT[IO, Socket, A]
 }
