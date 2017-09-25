@@ -2,5 +2,5 @@
 
 + Core Types
 
-+ `type Decoder[A] = Buf => Either[E, A]`
-+ `type Encoder[A] = (Buf, A) => Unit `
++ `type Reads[A] = Socket => IO[A]`
++ `type Writes[A] = (Socket, A) => IO[Unit] `
