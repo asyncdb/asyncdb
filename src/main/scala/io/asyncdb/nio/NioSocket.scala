@@ -15,9 +15,9 @@ trait NioSocket extends Socket {
   val config: SocketConfig
   val ctx: SocketContext
 
-  def readBytes(n: Int, timeout: Long): IO[Array[Byte]] = withBuf { buf =>
+  def readN(n: Int, buf: Buf, timeout: Long): IO[Buf] = {
     val start = System.currentTimeMillis
-    IO.async[Array[Byte]] { cb =>
+    IO.async[Buf] { cb =>
       def doRead(t: Long): Unit = t match {
         case t if t <= 0 =>
           cb(Left(Timeout))
@@ -31,9 +31,7 @@ trait NioSocket extends Socket {
 
               def completed(len: Integer, x: Any) = {
                 if (buf.remaining() >= n) {
-                  val arr = new Array[Byte](n)
-                  buf.get(arr)
-                  cb(Right(arr))
+                  cb(Right(buf.slice()))
                 } else if (len == -1) {
                   cb(Left(EOF))
                 } else {

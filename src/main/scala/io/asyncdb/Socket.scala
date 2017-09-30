@@ -6,6 +6,4 @@ import scala.concurrent.duration._
 /**
  * Timeout in seconds
  */
-trait Socket {
-  def readBytes(n: Int, timeout: Long): IO[Array[Byte]]
-}
+trait Socket {}
