@@ -10,11 +10,10 @@ sealed trait NioError extends Exception
 case object EOF       extends NioError
 case object Timeout   extends NioError
 
-class NioSocket(config: SocketConfig, ctx: SocketContext) extends Socket {
+trait NioSocket extends Socket {
 
-  private def withBuf[A](f: ByteBuffer => IO[A]) = {
-    ctx.bufRef.get().flatMap(f)
-  }
+  val config: SocketConfig
+  val ctx: SocketContext
 
   def readBytes(n: Int, timeout: Long): IO[Array[Byte]] = withBuf { buf =>
     val start = System.currentTimeMillis
@@ -49,5 +48,9 @@ class NioSocket(config: SocketConfig, ctx: SocketContext) extends Socket {
       }
       doRead(timeout)
     }
+  }
+
+  private def withBuf[A](f: ByteBuffer => IO[A]) = {
+    ctx.bufRef.get().flatMap(f)
   }
 }
