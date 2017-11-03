@@ -6,7 +6,7 @@ import java.nio.channels.AsynchronousSocketChannel
 case class SocketConfig(
   host: String,
   port: Int,
-  timeoutMillis: Int
+  readTimeout: Int
 )
 
 case class SocketContext(

@@ -1,6 +1,6 @@
 name := "asyncdb"
 
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.4"
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-effect" % "0.4",

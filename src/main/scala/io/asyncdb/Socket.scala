@@ -6,4 +6,6 @@ import scala.concurrent.duration._
 /**
  * Timeout in seconds
  */
-trait Socket {}
+trait Socket[I, O] {
+  def read: IO[O]
+}

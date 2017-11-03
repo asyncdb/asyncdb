@@ -5,11 +5,8 @@ import cats.effect._
 
 package object asyncdb {
 
-  /**
-   * stolen from miles' idea
-   */
-  private[asyncdb] type Tagged[U] = { type Tag = U }
-  private[asyncdb] type @@[T, U]  = T with Tagged[U]
+  class Int1(val value: Byte) extends AnyVal
+  class Int3(val value: Int)  extends AnyVal
 
   type Reads[A]  = ReaderT[IO, Socket, A]
   type Writes[A] = WriterT[IO, Socket, A]

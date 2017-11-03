@@ -10,18 +10,19 @@ sealed trait NioError extends Exception
 case object EOF       extends NioError
 case object Timeout   extends NioError
 
-trait NioSocket extends Socket {
+trait NioSocket[I, O] extends Socket[I, O] {
 
   val config: SocketConfig
   val ctx: SocketContext
 
   def readN(n: Int, buf: Buf, timeout: Long): IO[Buf] = {
-    val start = System.currentTimeMillis
+
     IO.async[Buf] { cb =>
       def doRead(t: Long): Unit = t match {
         case t if t <= 0 =>
           cb(Left(Timeout))
         case _ =>
+          val start = System.currentTimeMillis
           ctx.channel.read(
             buf,
             timeout,
