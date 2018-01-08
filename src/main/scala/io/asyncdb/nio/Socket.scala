@@ -1,26 +1,41 @@
 package io.asyncdb
 package nio
 
-import cats.effect.IO
+import cats.effect.Async
 import java.nio._
 import java.nio.channels.CompletionHandler
 import java.util.concurrent.TimeUnit
 
-sealed trait NioError extends Exception
-case object EOF       extends NioError
-case object Timeout   extends NioError
+trait SocketContext {
+  val channel: ASC
+}
 
-trait NioSocket[I, O] extends Socket[I, O] {
+private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
+  implicit F: Async[F]) {
 
-  val config: SocketConfig
-  val ctx: SocketContext
+  def write(buf: Buf, timeout: Long): F[Unit] = F.async { cb =>
+    ctx.channel.write(
+      buf,
+      timeout,
+      TimeUnit.MILLISECONDS,
+      null,
+      new CompletionHandler[Integer, Any] {
+        def completed(n: Integer, x: Any) = {
+          cb(Right({}))
+        }
 
-  def readN(n: Int, buf: Buf, timeout: Long): IO[Buf] = {
+        def failed(t: Throwable, x: Any) = {
+          cb(Left(t))
+        }
+      })
+  }
 
-    IO.async[Buf] { cb =>
+  def readN(n: Int, buf: Buf, timeout: Long): F[Buf] = {
+
+    F.async[Buf] { cb =>
       def doRead(t: Long): Unit = t match {
         case t if t <= 0 =>
-          cb(Left(Timeout))
+          cb(Left(Timeout(s"Cannot read ${n} after ${timeout}ms")))
         case _ =>
           val start = System.currentTimeMillis
           ctx.channel.read(
@@ -47,9 +62,5 @@ trait NioSocket[I, O] extends Socket[I, O] {
       }
       doRead(timeout)
     }
-  }
-
-  private def withBuf[A](f: ByteBuffer => IO[A]) = {
-    ctx.bufRef.get().flatMap(f)
   }
 }

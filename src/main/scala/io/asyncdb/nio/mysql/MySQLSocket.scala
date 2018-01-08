@@ -2,28 +2,29 @@ package io.asyncdb
 package nio
 package mysql
 
-import cats.effect._
+import cats.effect.Async
 
-class MySQLSocket(val config: SocketConfig, val ctx: SocketContext)
-    extends NioSocket[Request, Result] {
-  protected def readInt1(buf: Buf, timeout: Long): IO[Int3] = ???
-  protected def readInt3(buf: Buf, timeout: Long): IO[Int3] = ???
-  protected def readPacket(buf: Buf, timeout: Long): IO[Packet] = {
-    val buf     = ctx.bufRef.get()
-    val timeout = config.readTimeout
-    buf.flatMap { _buf =>
-      val startTime = System.currentTimeMillis
-      for {
-        head <- readInt1(_buf, timeout)
-        headReadTime = System.currentTimeMillis
-        len <- readInt3(_buf, timeout - (headReadTime - startTime))
-        lenReadTime = System.currentTimeMillis
-        payload <- readN(len.value, buf, (timeout - (lenReadTime - startTime)))
-      } yield Packet(head, len, payload)
+case class MySQLSocketContext[F[_]](
+  channel: ASC,
+  headerBuf: Buf,
+  payloadBuf: BufferRef[F]
+) extends SocketContext
+
+class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(implicit F: Async[F])
+    extends Socket(ctx) {
+
+  def readPacket(timeout: Long): F[Packet] = {
+    val start = System.currentTimeMillis
+    F.flatMap(readN(4, ctx.headerBuf, timeout)) { header =>
+      val remain = System.currentTimeMillis - start
+      val bs     = header.array()
+      val len    = Packet.decodeLength(bs)
+      val seq    = Packet.decodeSeq(bs)
+      F.flatMap(ctx.payloadBuf.ensureSize(len.value)) { buf =>
+        F.map(readN(len.value, buf, remain)) { payload =>
+          Packet(len, seq, payload)
+        }
+      }
     }
   }
-  private val payloadRead: PayloadReader[Result]    = ???
-  private val payloadWriter: PayloadWriter[Request] = ???
-
-  def read[O] = {}
 }

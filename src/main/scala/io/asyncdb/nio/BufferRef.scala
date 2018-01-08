@@ -1,10 +1,8 @@
 package io.asyncdb
 package nio
 
-import java.nio.ByteBuffer
-import cats.effect.IO
+import cats.effect._
 
-trait BufferRef {
-  def get(): IO[ByteBuffer]
-  def resize(size: Int): IO[ByteBuffer]
+abstract class BufferRef[F[_]: Sync] {
+  def ensureSize(size: Int): F[Buf]
 }

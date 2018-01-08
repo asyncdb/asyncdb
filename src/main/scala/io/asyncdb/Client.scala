@@ -1,7 +1,5 @@
 package io.asyncdb
 
-import cats.effect.IO
-
-trait Client {
-  def execute[I, O](cmd: I): IO[O]
+trait Client[F[_]] {
+  def execute[I, O](cmd: I): F[O]
 }
