@@ -47,7 +47,7 @@ private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
 
               def completed(len: Integer, x: Any) = {
                 if (buf.remaining() >= n) {
-                  cb(Right(buf.slice()))
+                  cb(Right(buf))
                 } else if (len == -1) {
                   cb(Left(EOF))
                 } else {
