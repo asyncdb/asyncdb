@@ -3,8 +3,10 @@ package nio
 package mysql
 
 import cats.effect.Async
+import java.net.SocketAddress
 
 case class MySQLSocketContext[F[_]](
+  address: SocketAddress,
   channel: ASC,
   headerBuf: Buf,
   payloadBuf: BufferRef[F]

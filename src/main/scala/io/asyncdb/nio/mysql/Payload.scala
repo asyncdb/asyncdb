@@ -3,5 +3,4 @@ package nio
 package mysql
 
 case class Payload(
-
-)
+  )
