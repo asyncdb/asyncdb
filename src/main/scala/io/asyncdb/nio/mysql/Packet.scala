@@ -2,11 +2,9 @@ package io.asyncdb
 package nio
 package mysql
 
-class Int1(val value: Byte)  extends AnyVal
-class Int2(val value: Short) extends AnyVal
-class Int3(val value: Int)   extends AnyVal
-class Lenenc(val value: Int) extends AnyVal
-
+/**
+ * Data structure
+ */
 case class Packet(len: Int3, seq: Int1, payload: Buf)
 
 object Packet {

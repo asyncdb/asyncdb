@@ -6,10 +6,18 @@ import scala.util._
 
 trait Reader[A] {
   def read(buf: Buf): Either[Throwable, A]
+  def flatMap[B](f: A => Reader[B]): Reader[B] = {
+    val self = this
+    new Reader[B] {
+      def read(buf: Buf): Either[Throwable, B] = {
+        self.read(buf).flatMap { a =>
+          f(a).read(buf)
+        }
+      }
+    }
+  }
 }
 
 trait Writer[A] {
   def write(a: A, buf: Buf): Unit
 }
-
-trait Readers {}
