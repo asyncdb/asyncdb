@@ -9,6 +9,7 @@ class LenencInt(val value: Int)         extends AnyVal
 class NullBytes(val value: Array[Byte]) extends AnyVal
 
 object Codecs {
+
   implicit object int1Reader extends Reader[Int1] {
     def read(buf: Buf): Either[Throwable, Int1] = {
       try {

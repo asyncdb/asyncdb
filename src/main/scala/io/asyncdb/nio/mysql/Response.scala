@@ -6,12 +6,13 @@ package mysql
  * HandshakeInit message sent from server
  */
 case class HandshakeInit(
-  protocol: Byte,
+  protocol: Int1,
   version: Array[Byte],
-  threadId: Long,
+  connectionId: Long,
   salt: Array[Byte],
   serverCap: Int,
   charset: Short,
   status: Short)
 
-object HandshakeInit {}
+object HandshakeInit {
+}

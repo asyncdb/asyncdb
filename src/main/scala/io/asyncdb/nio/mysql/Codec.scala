@@ -16,6 +16,12 @@ trait Reader[A] {
       }
     }
   }
+  def map[B](f: A => B): Reader[B] = {
+    val self = this
+    new Reader[B] {
+      def read(buf: Buf) = self.read(buf).map(f)
+    }
+  }
 }
 
 trait Writer[A] {
