@@ -2,13 +2,14 @@ package io.asyncdb
 package nio
 package mysql
 
-class Int1(val value: Byte)             extends AnyVal
-class Int2(val value: Int)              extends AnyVal
-class Int3(val value: Int)              extends AnyVal
-class LenencInt(val value: Int)         extends AnyVal
-class NullBytes(val value: Array[Byte]) extends AnyVal
+class Int1(val value: Byte)                      extends AnyVal
+class Int2(val value: Int)                       extends AnyVal
+class Int3(val value: Int)                       extends AnyVal
+class LenencInt(val value: Int)                  extends AnyVal
+class NullDelimitedBytes(val value: Array[Byte]) extends AnyVal
+class NullDelimitedUTF8String(val value: String) extends AnyVal
 
-object Codecs {
+object BasicCodecs {
 
   implicit object int1Reader extends Reader[Int1] {
     def read(buf: Buf): Either[Throwable, Int1] = {
@@ -46,6 +47,33 @@ object Codecs {
         case e: Throwable =>
           Left(e)
       }
+    }
+  }
+
+  implicit object nullBytesReader extends Reader[NullDelimitedBytes] {
+    def read(buf: Buf): Either[Throwable, NullDelimitedBytes] = {
+      buf.mark()
+
+      @annotation.tailrec
+      def calcBytes(readed: Int): Int = {
+        val b = buf.get()
+        if (b == 0x00) {
+          readed + 1
+        } else {
+          calcBytes(readed + 1)
+        }
+      }
+
+      try {
+        val len = calcBytes(0)
+        val out = Array.ofDim[Byte](len)
+        buf.get(out)
+        Right(new NullDelimitedBytes(out.init))
+      } catch {
+        case e: Throwable =>
+          Left(e)
+      }
+
     }
   }
 
