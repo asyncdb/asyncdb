@@ -13,4 +13,6 @@ scalacOptions ++= Seq(
   "-deprecation"
 )
 
+fork in Test := true
+
 scalafmtOnCompile in ThisBuild := true

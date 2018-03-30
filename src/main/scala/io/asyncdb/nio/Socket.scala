@@ -16,11 +16,9 @@ trait SocketContext {
 private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
   implicit F: Async[F]) {
 
-  def connect = F.async[ASC] { cb =>
-    ctx.channel.connect(
-      ctx.address,
-      null,
-      Handler(cb(Right(ctx.channel)))(t => cb(Left(t))))
+  def connect = F.async[this.type] { cb =>
+    ctx.channel
+      .connect(ctx.address, null, Handler(cb(Right(this)))(t => cb(Left(t))))
   }
 
   def write(buf: Buf, timeout: Long): F[Unit] = F.async { cb =>
@@ -32,32 +30,35 @@ private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
       Handler(cb(Right({})))(t => cb(Left(t))))
   }
 
-  def readN(n: Int, buf: Buf, timeout: Long): F[Buf] = {
+  def close(): F[Unit] = F.delay {
+    ctx.channel.close()
+  }
 
+  def readN(n: Int, buf: Buf, timeout: Long): F[Buf] = {
     F.async[Buf] { cb =>
       def doRead(t: Long): Unit = t match {
         case t if t <= 0 =>
           cb(Left(Timeout(s"Cannot read ${n} after ${timeout}ms")))
         case _ =>
           val start = System.currentTimeMillis
-          ctx.channel.read(
-            buf,
-            timeout,
-            TimeUnit.MILLISECONDS,
-            null,
-            Handler[Integer] { len: Integer =>
-              if (buf.remaining() >= n) {
-                cb(Right(buf))
-              } else if (len == -1) {
-                cb(Left(EOF))
-              } else {
+          ctx.channel
+            .read(buf, t, TimeUnit.MILLISECONDS, null, Handler[Integer, Any] {
+              len: Integer =>
                 val took = System.currentTimeMillis - start
-                doRead(t - took)
-              }
+                if (len == 0) {
+                  doRead(t - took)
+                } else if (buf.position() >= n) {
+                  buf.flip()
+                  cb(Right(buf))
+                } else if (len == -1) {
+                  cb(Left(EOF))
+                } else {
+                  doRead(t - took)
+                }
             } { err =>
+              println(s"finish reading $err")
               cb(Left(err))
-            }
-          )
+            })
       }
       doRead(timeout)
     }

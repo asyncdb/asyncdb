@@ -7,7 +7,7 @@ object Handler {
 
   def apply[A](onCompleted: => Unit)(
     onFailed: Throwable => Unit): CompletionHandler[A, Any] = {
-    apply[A]((t: A) => { onCompleted })(onFailed)
+    apply[A, Any]((t: A) => { onCompleted })(onFailed)
   }
 
   def apply[A, V](onCompleted: A => Unit)(
@@ -16,7 +16,6 @@ object Handler {
       def completed(n: A, x: Any) = {
         onCompleted(n)
       }
-
       def failed(t: Throwable, x: Any) = {
         onFailed(t)
       }

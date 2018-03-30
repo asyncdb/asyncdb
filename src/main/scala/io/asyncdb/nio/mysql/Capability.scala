@@ -3,7 +3,7 @@ package io.asyncdb.nio.mysql
 /**
  * Stolen from finagle mysql client
  */
-object Capability {
+object Cap {
   val LongPassword     = 0x1     // new more secure passwords
   val FoundRows        = 0x2     // Found instead of affected rows
   val LongFlag         = 0x4     // Get all column flags
@@ -47,36 +47,36 @@ object Capability {
    * Encapsulates this client's base
    * capability.
    */
-  val baseCap = Capability(
-    Capability.LongFlag,
-    Capability.Transactions,
-    Capability.Protocol41,
-    Capability.FoundRows,
-    Capability.Interactive,
-    Capability.LongPassword,
-    Capability.ConnectWithDB,
-    Capability.SecureConnection,
-    Capability.LocalFiles
+  val baseCap = Cap(
+    Cap.LongFlag,
+    Cap.Transactions,
+    Cap.Protocol41,
+    Cap.FoundRows,
+    Cap.Interactive,
+    Cap.LongPassword,
+    Cap.ConnectWithDB,
+    Cap.SecureConnection,
+    Cap.LocalFiles
   )
 
-  def apply(flags: Int*): Capability = {
+  def apply(flags: Int*): Cap = {
     val m = flags.foldLeft(0)(_ | _)
-    Capability(m)
+    Cap(m)
   }
 }
 
-case class Capability(mask: Int) {
-  def +(flag: Int)   = Capability(mask, flag)
-  def -(flag: Int)   = Capability(mask & ~flag)
+case class Cap(mask: Int) extends AnyVal {
+  def +(flag: Int)   = Cap(mask, flag)
+  def -(flag: Int)   = Cap(mask & ~flag)
   def has(flag: Int) = hasAll(flag)
   def hasAll(flags: Int*) =
     flags map { f: Int =>
       (f & mask) > 0
     } reduceLeft { _ && _ }
   override def toString() = {
-    val cs = Capability.CapabilityMap filter { t =>
+    val cs = Cap.CapabilityMap filter { t =>
       has(t._2)
     } map { _._1 } mkString (", ")
-    "Capability(" + mask + ": " + cs + ")"
+    "Cap(" + mask + ": " + cs + ")"
   }
 }

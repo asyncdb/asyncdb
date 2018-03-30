@@ -17,16 +17,23 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(implicit F: Async[F])
 
   def readPacket(timeout: Long): F[Packet] = {
     val start = System.currentTimeMillis
+    ctx.headerBuf.clear()
     F.flatMap(readN(4, ctx.headerBuf, timeout)) { header =>
       val remain = System.currentTimeMillis - start
       val bs     = header.array()
       val len    = Packet.decodeLength(bs)
       val seq    = Packet.decodeSeq(bs)
+
       F.flatMap(ctx.payloadBuf.ensureSize(len.value)) { buf =>
         F.map(readN(len.value, buf, remain)) { payload =>
+          println(util.Hex.fromBytes(payload.array().take(len.value)))
           Packet(len, seq, payload)
         }
       }
     }
+  }
+
+  def read[A: Reader](timeout: Long) = F.map(readPacket(timeout)) { packet =>
+    decodeBuf[A](packet.payload)
   }
 }
