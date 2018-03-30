@@ -15,5 +15,10 @@ class HandshakeInitSpec extends SocketSpec {
     "decode init packet" in {
       decodeBuf[HandshakeInit](ByteBuffer.wrap(initBytes)) should be('right)
     }
+    "connect to server" in withSocket { socket =>
+      socket.read[HandshakeInit](1000)
+    }.unsafeToFuture.map { r =>
+      r should be('right)
+    }
   }
 }

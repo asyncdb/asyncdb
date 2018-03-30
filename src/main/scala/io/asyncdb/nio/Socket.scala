@@ -56,7 +56,6 @@ private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
                   doRead(t - took)
                 }
             } { err =>
-              println(s"finish reading $err")
               cb(Left(err))
             })
       }

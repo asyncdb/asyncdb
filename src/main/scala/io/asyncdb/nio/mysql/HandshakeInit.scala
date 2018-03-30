@@ -66,10 +66,9 @@ object HandshakeInit {
         ex   <- readExtra(cfl, buf)
       } yield {
         val authData = apd1 ++ ex.authPluginDataPart2
-        val cap      = (cfl.value & 0xff) & (ex.capabilityFlagUpper.value & 0xff000000)
-        println(apd1.size)
-        val cs      = CharsetMap.of(ex.characterSet.value)
-        val version = new String(v.value, cs)
+        val cap      = (cfl.value & 0xff) | (ex.capabilityFlagUpper.value & 0xff000000)
+        val cs       = CharsetMap.of((ex.characterSet.value & 0x00ff).toShort)
+        val version  = new String(v.value, cs)
         HandshakeInit(
           p,
           version,

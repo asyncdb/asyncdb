@@ -26,7 +26,6 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(implicit F: Async[F])
 
       F.flatMap(ctx.payloadBuf.ensureSize(len.value)) { buf =>
         F.map(readN(len.value, buf, remain)) { payload =>
-          println(util.Hex.fromBytes(payload.array().take(len.value)))
           Packet(len, seq, payload)
         }
       }

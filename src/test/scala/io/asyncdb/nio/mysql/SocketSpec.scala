@@ -21,5 +21,13 @@ abstract class SocketSpec extends AsyncFreeSpec with Matchers {
       BufferRef.withFactory(128 * 1024, s => IO.pure(ByteBuffer.allocate(s)))
   )
 
-  def socket = new MySQLSocket(ctx)
+  private def connect = new MySQLSocket(ctx).connect
+
+  protected def withSocket[A](f: MySQLSocket[IO] => IO[A]): IO[A] = {
+    for {
+      c <- connect
+      r <- f(c)
+      _ <- c.close()
+    } yield r
+  }
 }
