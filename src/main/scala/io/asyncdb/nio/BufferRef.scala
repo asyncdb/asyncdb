@@ -25,7 +25,8 @@ object BufferRef {
       val ref = new AtomicReference(f(initSize))
       def ensureSize(size: Int) = F.flatMap(ref.get()) { previous =>
         if (previous.capacity >= size) {
-          F.pure(previous.clear())
+          previous.clear()
+          F.pure(previous)
         } else {
           val newBuf =
             f(math.max(size, previous.capacity + previous.capacity / 2))
