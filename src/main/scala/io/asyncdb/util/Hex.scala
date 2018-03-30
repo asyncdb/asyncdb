@@ -2,11 +2,9 @@ package io.asyncdb.util
 
 object Hex {
   def toBytes(hex: String): Array[Byte] = {
-    hex.grouped(2).toArray.flatMap {
+    hex.grouped(2).toArray.map {
       case sub =>
-        Array(
-          Integer.parseInt(sub(0).toString, 16).toByte,
-          Integer.parseInt(sub(1).toString, 16).toByte)
+        Integer.parseInt(sub, 16).toByte
     }
   }
 
