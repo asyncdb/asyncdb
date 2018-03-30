@@ -16,7 +16,7 @@ case class NullDelimitedUTF8String(val value: String) extends AnyVal
 trait BasicCodecs {
 
   private[mysql] def readNBytes(buf: Buf, n: Int) = tryExec {
-    val out = Array.ofDim[Byte](4)
+    val out = Array.ofDim[Byte](n)
     buf.get(out)
     out
   }
