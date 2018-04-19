@@ -29,7 +29,7 @@ case class HandshakeInit(
 object HandshakeInit {
   implicit object HandshakeInitReader extends Reader[HandshakeInit] {
 
-    private def readExtra(capFlagLow: Int2, buf: Buf) = {
+    private def readExtra(capFlagLow: Int2, buf: BufView) = {
 
       def readPart2(len: Int1) = {
         val isSecure = Cap(len.value.toInt).has(Cap.SecureConnection)
@@ -55,7 +55,7 @@ object HandshakeInit {
       }
     }
 
-    def read(buf: Buf) = {
+    def read(buf: BufView) = {
       for {
         p    <- decodeBuf[Int1](buf)
         v    <- decodeBuf[NullDelimitedBytes](buf)

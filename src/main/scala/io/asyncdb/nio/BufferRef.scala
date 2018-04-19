@@ -7,12 +7,13 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Buffer allocator
  */
-abstract class BufferRef[F[_]: Sync] {
+abstract class BufferPool[F[_]: Sync] {
 
   /**
    * Allocate a buffer that ensures its capacity >= `size`
    */
-  def ensureSize(size: Int): F[Buf]
+  def take(size: Int): F[Buf]
+  def offer(buf: Buf): F[Unit]
 }
 
 object BufferRef {
@@ -21,18 +22,9 @@ object BufferRef {
    * This buffer allocator cannot be used for multiple threads
    */
   def withFactory[F[_]](initSize: Int, f: Int => F[Buf])(implicit F: Sync[F]) =
-    new BufferRef[F] {
-      val ref = new AtomicReference(f(initSize))
-      def ensureSize(size: Int) = F.flatMap(ref.get()) { previous =>
-        if (previous.capacity >= size) {
-          previous.clear()
-          F.pure(previous)
-        } else {
-          val newBuf =
-            f(math.max(size, previous.capacity + previous.capacity / 2))
-          ref.set(newBuf)
-          newBuf
-        }
-      }
+    new BufferPool[F] {
+      val ref             = new AtomicReference(f(initSize))
+      def take(size: Int) = ???
+      def offer(buf: Buf) = ???
     }
 }

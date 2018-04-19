@@ -15,7 +15,7 @@ case class NullDelimitedUTF8String(val value: String) extends AnyVal
 
 trait BasicCodecs {
 
-  private[mysql] def readNBytes(buf: Buf, n: Int) = tryExec {
+  private[mysql] def readNBytes(buf: BufView, n: Int) = tryExec {
     val out = Array.ofDim[Byte](n)
     buf.get(out)
     out
@@ -29,7 +29,7 @@ trait BasicCodecs {
   }
 
   implicit object intReader extends Reader[IntLE] {
-    def read(buf: Buf): Either[Throwable, IntLE] = tryExec {
+    def read(buf: BufView): Either[Throwable, IntLE] = tryExec {
       val ba = Array.ofDim[Byte](4)
       buf.get(ba)
       val i = ByteBuffer.wrap(ba).order(ByteOrder.LITTLE_ENDIAN).getInt()
@@ -38,13 +38,13 @@ trait BasicCodecs {
   }
 
   implicit object int1Reader extends Reader[Int1] {
-    def read(buf: Buf): Either[Throwable, Int1] = tryExec {
+    def read(buf: BufView): Either[Throwable, Int1] = tryExec {
       new Int1(buf.get())
     }
   }
 
   implicit object int2Reader extends Reader[Int2] {
-    def read(buf: Buf): Either[Throwable, Int2] = tryExec {
+    def read(buf: BufView): Either[Throwable, Int2] = tryExec {
       val ba = new Array[Byte](2)
       buf.get(ba)
       val r = b2i(ba(0)) | (b2i(ba(1)) << 8)
@@ -53,7 +53,7 @@ trait BasicCodecs {
   }
 
   implicit object int3Reader extends Reader[Int3] {
-    def read(buf: Buf): Either[Throwable, Int3] = {
+    def read(buf: BufView): Either[Throwable, Int3] = {
       val ba = new Array[Byte](3)
       try {
         buf.get(ba)
@@ -67,30 +67,13 @@ trait BasicCodecs {
   }
 
   implicit object nullBytesReader extends Reader[NullDelimitedBytes] {
-    def read(buf: Buf): Either[Throwable, NullDelimitedBytes] = {
-      buf.mark()
-
-      @annotation.tailrec
-      def forwardBytes(readed: Int): Int = {
-        val b = buf.get()
-        if (b == 0x00) {
-          readed + 1
-        } else {
-          forwardBytes(readed + 1)
-        }
-      }
-
+    def read(buf: BufView): Either[Throwable, NullDelimitedBytes] = {
       try {
-        val len = forwardBytes(0)
-        buf.reset()
-        val out = Array.ofDim[Byte](len)
-        buf.get(out)
-        Right(new NullDelimitedBytes(out.init))
+        Right(new NullDelimitedBytes(buf.takeThrough(_ != 0x00).init))
       } catch {
         case e: Throwable =>
           Left(e)
       }
-
     }
   }
 
