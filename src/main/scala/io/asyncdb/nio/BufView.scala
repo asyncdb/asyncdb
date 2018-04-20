@@ -10,5 +10,6 @@ trait BufView {
 
 object BufView {
   def apply(buf: Buf): BufView           = ???
+  def apply(bytes: Array[Byte]): BufView = ???
   def composite(bufs: BufView*): BufView = ???
 }
