@@ -35,17 +35,18 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(
     }
   }
 
-  def readPayload(timeout: Long): F[BufView] = {
+  def readPayload(timeout: Long): F[ByteVector] = {
 
-    def readUntilEnd(to: Long): F[BufView] = {
+    def readUntilEnd(to: Long): F[ByteVector] = {
       val start = System.currentTimeMillis
       F.flatMap(readPacket0(timeout)) { p =>
         val end = System.currentTimeMillis
-        if (p.payload.remaining() < MaxPacketSize)
-          F.pure(BufView(p.payload))
+        val bs  = ByteVector(p.payload)
+        if (bs.size < MaxPacketSize)
+          F.pure(bs)
         else
           F.map(readUntilEnd(to - (end - start))) { pn =>
-            BufView.composite(BufView(p.payload), pn)
+            bs ++ pn
           }
       }
     }

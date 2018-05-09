@@ -2,7 +2,8 @@ package io.asyncdb
 package nio
 
 package object mysql {
-  private[mysql] def decodeBuf[A](buf: BufView)(implicit reader: Reader[A]) = {
+  private[mysql] def decodeBuf[A](buf: ByteVector)(
+    implicit reader: Reader[A]) = {
     reader.read(buf)
   }
 

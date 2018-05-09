@@ -13,7 +13,7 @@ class HandshakeInitSpec extends SocketSpec {
 
   "HandshakeInit" - {
     "decode init packet" in {
-      decodeBuf[HandshakeInit](BufView(initBytes)) should be('right)
+      decodeBuf[HandshakeInit](ByteVector(initBytes)) should be('right)
     }
     "connect to server" in withSocket { socket =>
       socket.read[HandshakeInit](1000)
