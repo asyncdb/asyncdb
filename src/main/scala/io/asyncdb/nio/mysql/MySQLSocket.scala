@@ -23,7 +23,7 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(
     ctx.headerBuf.clear()
     F.flatMap(readN(4, ctx.headerBuf, timeout)) { header =>
       val remain = System.currentTimeMillis - start
-      val bs     = header.array()
+      val bs     = header.array
       val len    = Packet.decodeLength(bs)
       val seq    = Packet.decodeSeq(bs)
 
@@ -41,7 +41,7 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(
       val start = System.currentTimeMillis
       F.flatMap(readPacket0(timeout)) { p =>
         val end = System.currentTimeMillis
-        val bs  = ByteVector(p.payload)
+        val bs  = p.payload
         if (bs.size < MaxPacketSize)
           F.pure(bs)
         else
@@ -54,6 +54,6 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(
   }
 
   def read[A: Reader](timeout: Long) = F.map(readPayload(timeout)) { packet =>
-    decodeBuf[A](packet)
+    Codec.read[A](packet)
   }
 }

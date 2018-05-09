@@ -12,7 +12,7 @@ abstract class BufferPool[F[_]: Sync] {
   /**
    * Allocate a buffer that ensures its capacity >= `size`
    */
-  def take(size: Int): F[Buf]
+  def take(cap: Int): F[Buf]
   def offer(buf: Buf): F[Unit]
 }
 

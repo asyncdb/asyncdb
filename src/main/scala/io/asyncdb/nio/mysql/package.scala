@@ -2,10 +2,5 @@ package io.asyncdb
 package nio
 
 package object mysql {
-  private[mysql] def decodeBuf[A](buf: ByteVector)(
-    implicit reader: Reader[A]) = {
-    reader.read(buf)
-  }
-
-  val MaxPacketSize = 16L * 1024L * 1024L
+  val MaxPacketSize = 0xffffff
 }

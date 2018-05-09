@@ -21,9 +21,12 @@ private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
       .connect(ctx.address, null, Handler(cb(Right(this)))(t => cb(Left(t))))
   }
 
-  def write(buf: Buf, timeout: Long): F[Unit] = F.async { cb =>
+  def write(bytes: ByteVector, timeout: Long): F[Unit] = F.async { cb =>
+    val bufs = bytes.bufs
     ctx.channel.write(
-      buf,
+      bufs.toArray,
+      0,
+      bufs.size,
       timeout,
       TimeUnit.MILLISECONDS,
       null,
@@ -34,8 +37,8 @@ private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
     ctx.channel.close()
   }
 
-  def readN(n: Int, buf: Buf, timeout: Long): F[Buf] = {
-    F.async[Buf] { cb =>
+  def readN(n: Int, buf: Buf, timeout: Long): F[ByteVector] = {
+    F.async[ByteVector] { cb =>
       def doRead(t: Long): Unit = t match {
         case t if t <= 0 =>
           cb(Left(Timeout(s"Cannot read ${n} after ${timeout}ms")))
@@ -49,7 +52,7 @@ private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
                   doRead(t - took)
                 } else if (buf.position() >= n) {
                   buf.flip()
-                  cb(Right(buf))
+                  cb(Right(ByteVector(buf)))
                 } else if (len == -1) {
                   cb(Left(EOF))
                 } else {
