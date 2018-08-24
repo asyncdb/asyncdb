@@ -5,7 +5,7 @@ package mysql
 /**
  * Data structure
  */
-case class Packet(len: Int3, seq: Int1, payload: ByteVector)
+case class Packet(len: Int3, seq: Int1, buf: Buf)
 
 object Packet {
 

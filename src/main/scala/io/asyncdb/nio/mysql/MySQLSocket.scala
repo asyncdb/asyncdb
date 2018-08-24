@@ -2,6 +2,8 @@ package io.asyncdb
 package nio
 package mysql
 
+import cats.instances.vector._
+import cats.syntax.all._
 import cats.effect.{Async, Bracket}
 import java.net.SocketAddress
 import java.nio.ByteBuffer
@@ -18,7 +20,7 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(
   B: Bracket[F, Throwable])
     extends Socket(ctx) {
 
-  def readPacket0(timeout: Long): F[Packet] = {
+  private def readPacket0(timeout: Long): F[Packet] = {
     val start = System.currentTimeMillis
     ctx.headerBuf.clear()
     F.flatMap(readN(4, ctx.headerBuf, timeout)) { header =>
@@ -26,27 +28,25 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(
       val bs     = header.array
       val len    = Packet.decodeLength(bs)
       val seq    = Packet.decodeSeq(bs)
-
-      B.bracket(ctx.payloadBuf.take(len.value))(buf => {
+      ctx.payloadBuf.acquire(len.value).use { buf =>
         F.map(readN(len.value, buf, remain)) { payload =>
           Packet(len, seq, payload)
         }
-      })(buf => ctx.payloadBuf.offer(buf))
+      }
     }
   }
 
-  def readPayload(timeout: Long): F[ByteVector] = {
+  private def readPayload(timeout: Long): F[Vector[Packet]] = {
 
-    def readUntilEnd(to: Long): F[ByteVector] = {
+    def readUntilEnd(to: Long): F[Vector[Packet]] = {
       val start = System.currentTimeMillis
       F.flatMap(readPacket0(timeout)) { p =>
         val end = System.currentTimeMillis
-        val bs  = p.payload
-        if (bs.size < MaxPacketSize)
-          F.pure(bs)
+        if (p.len.value < MaxPacketSize)
+          F.pure(Vector(p))
         else
           F.map(readUntilEnd(to - (end - start))) { pn =>
-            bs ++ pn
+            p +: pn
           }
       }
     }
@@ -56,4 +56,6 @@ class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(
   def read[A: Reader](timeout: Long) = F.map(readPayload(timeout)) { packet =>
     Codec.read[A](packet)
   }
+
+  def write[A: Writer](a: A, timeout: Long) = {}
 }

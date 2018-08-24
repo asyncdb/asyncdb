@@ -8,4 +8,4 @@ trait Codecs {
   implicit val delimitedBytesReader: Reader[DelimitedBytes] = ???
 }
 
-object codecs extends Codecs
+object Codecs extends Codecs

@@ -17,8 +17,7 @@ abstract class SocketSpec extends AsyncFreeSpec with Matchers {
     address = new InetSocketAddress("127.0.0.1", 3306),
     channel = AsynchronousSocketChannel.open(group),
     headerBuf = ByteBuffer.allocate(4),
-    payloadBuf =
-      BufferRef.withFactory(128 * 1024, s => IO.pure(ByteBuffer.allocate(s)))
+    payloadBuf = ???
   )
 
   private def connect = new MySQLSocket(ctx).connect

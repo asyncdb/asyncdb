@@ -3,7 +3,7 @@ package nio
 package mysql
 
 import java.nio.charset.{Charset, StandardCharsets}
-import codecs._
+import Codecs._
 
 /**
  * https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeV10

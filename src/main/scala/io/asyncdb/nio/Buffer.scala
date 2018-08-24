@@ -4,24 +4,24 @@ package nio
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * ByteVector for bytes reading, allow composite two or more [[ByteBuffers]]
+ * BufferReader for bytes reading, allow composite two or more [[ByteBuffers]]
  */
-trait ByteVector {
+trait BufferReader {
   def size: Long
   def take(n: Int): Array[Byte]
   def takeWhile(p: Byte => Boolean): Array[Byte]
-  def ++(r: ByteVector): ByteVector = new ByteVector.Append(this, r)
+  def ++(r: BufferReader): BufferReader = new BufferReader.Append(this, r)
   def array: Array[Byte]
-  def bufs: Vector[Buf]
+
   protected def takeWhile0(p: Byte => Boolean): (Array[Byte], Boolean)
 }
 
-object ByteVector {
+object BufferReader {
 
-  def apply(bytes: Array[Byte]): ByteVector =
+  def apply(bytes: Array[Byte]): BufferReader =
     apply(java.nio.ByteBuffer.wrap(bytes))
 
-  def apply(buf: Buf): ByteVector = new ByteVector {
+  def apply(buf: Buf): BufferReader = new BufferReader {
 
     val slice = buf.slice()
 
@@ -69,7 +69,8 @@ object ByteVector {
     }
   }
 
-  private class Append(left: ByteVector, right: ByteVector) extends ByteVector {
+  private class Append(left: BufferReader, right: BufferReader)
+      extends BufferReader {
     def array = left.array ++ right.array
     def size  = left.size + right.size
     def take(n: Int): Array[Byte] = {
@@ -78,7 +79,7 @@ object ByteVector {
         leftTaked ++ right.take(n - leftTaked.size)
       } else leftTaked
     }
-    def bufs = left.bufs ++ right.bufs
+
     def takeWhile(p: Byte => Boolean) = {
       val (bytes, isMatched) = left.takeWhile0(p)
       if (!isMatched) bytes ++ right.takeWhile(p) else bytes
@@ -94,3 +95,5 @@ object ByteVector {
     }
   }
 }
+
+trait BufferWriter {}
