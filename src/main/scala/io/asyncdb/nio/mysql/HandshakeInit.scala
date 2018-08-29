@@ -13,7 +13,7 @@ case class ExtraHandshakeData(
   statusFlags: Int2,
   capabilityFlagUpper: Int2,
   authPluginDataLen: Int1,
-  reserved: Array[Byte],
+  reserved: sized.Bytes10,
   authPluginDataPart2: Array[Byte]
 )
 

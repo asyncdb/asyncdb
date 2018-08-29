@@ -1,6 +1,7 @@
 package io.asyncdb
 package nio
 
+import cats.data.NonEmptyList
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -8,10 +9,12 @@ import scala.collection.mutable.ArrayBuffer
  */
 trait BufferReader {
   def size: Long
+  def get: Byte
   def take(n: Int): Array[Byte]
   def takeWhile(p: Byte => Boolean): Array[Byte]
   def ++(r: BufferReader): BufferReader = new BufferReader.Append(this, r)
   def array: Array[Byte]
+  def hasRemaining: Boolean
 
   protected def takeWhile0(p: Byte => Boolean): (Array[Byte], Boolean)
 }
@@ -27,19 +30,23 @@ object BufferReader {
 
     val init = slice.duplicate()
 
+    def get = slice.get
+
     def array = init.array()
 
-    def bufs = Vector(buf)
+    def bufs = NonEmptyList.one(buf)
 
     def size = init.remaining()
 
     def take(n: Int) = {
       val arr = Array.ofDim[Byte](n)
-      buf.get(arr)
+      slice.get(arr)
       arr
     }
 
     def takeWhile(p: Byte => Boolean) = takeWhile0(p)._1
+
+    def hasRemaining = slice.hasRemaining()
 
     def takeWhile0(p: Byte => Boolean) = {
 
@@ -60,7 +67,6 @@ object BufferReader {
         } else {
           (matches, rs)
         }
-
       }
 
       val abf          = new ArrayBuffer[Byte]
@@ -80,6 +86,10 @@ object BufferReader {
       } else leftTaked
     }
 
+    def get = if (left.hasRemaining) left.get else right.get
+
+    def hasRemaining = left.hasRemaining || right.hasRemaining
+
     def takeWhile(p: Byte => Boolean) = {
       val (bytes, isMatched) = left.takeWhile0(p)
       if (!isMatched) bytes ++ right.takeWhile(p) else bytes
@@ -95,5 +105,3 @@ object BufferReader {
     }
   }
 }
-
-trait BufferWriter {}

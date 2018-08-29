@@ -2,6 +2,7 @@ package io.asyncdb
 package nio
 package mysql
 
+import cats.data.NonEmptyList
 import io.asyncdb.util.Hex
 import org.scalatest._
 import java.nio.ByteBuffer
@@ -16,7 +17,8 @@ class HandshakeInitSpec extends SocketSpec {
 
   "HandshakeInit" - {
     "decode init packet" in {
-      Codec.read[HandshakeInit](Vector(handshakePacket)) should be('right)
+      Codec.read[HandshakeInit](NonEmptyList.one(handshakePacket)) should be(
+        'right)
     }
     "connect to server" in withSocket { socket =>
       socket.read[HandshakeInit](1000)
