@@ -2,9 +2,10 @@ package io.asyncdb
 package nio
 package mysql
 
+import cats._
 import cats.data.NonEmptyList
+import cats.syntax.all._
 import scala.util._
-import shapeless._
 
 trait Reader[A] {
   def read(buf: NonEmptyList[Packet]): Either[Throwable, A]
@@ -16,50 +17,67 @@ trait Writer[A] {
 
 object Reader {
 
-  implicit val int1Reader: Reader[Int1] = Codec.reader[Int1] { buf =>
-    Int1(buf.get)
-  }
+  implicit val readerMonadError: MonadError[Reader, Throwable] =
+    new MonadError[Reader, Throwable] with StackSafeMonad[Reader] {
+      def pure[A](a: A) = Codec.reader(buf => a)
+      def raiseError[A](e: Throwable) = new Reader[A] {
+        def read(buf: NonEmptyList[Packet]) = Left(e)
+      }
+      def handleErrorWith[A](fa: Reader[A])(f: Throwable => Reader[A]) =
+        new Reader[A] {
+          def read(buf: NonEmptyList[Packet]) = {
+            fa.read(buf).recoverWith {
+              case e: Throwable => f(e).read(buf)
+            }
+          }
+        }
 
-  implicit val int3Reader: Reader[Int3] = Codec.reader[Int3] { buf =>
-    val bytes = buf.take(3)
-    val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
-      2).toInt & 0xff) << 16)
-    Int3(v)
-  }
-
-  //little endian ordered int
-  implicit val intLEReader: Reader[IntLE] = Codec.reader[IntLE] { buf =>
-    val bytes = buf.take(4)
-    val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
-      2).toInt & 0xff) << 16) | (bytes(4).toInt & 0xff) << 24
-    IntLE(v)
-  }
-
-  implicit val hnilReader: Reader[HNil] = new Reader[HNil] {
-    def read(packets: NonEmptyList[Packet]) = Right(HNil)
-  }
-
-  implicit def hconsReader[H, T <: HList](
-    implicit hr: Reader[H],
-    tr: Reader[T]): Reader[H :: T] = new Reader[H :: T] {
-    def read(packets: NonEmptyList[Packet]) = {
-      hr.read(packets).flatMap { h =>
-        tr.read(packets).map { t =>
-          h :: t
+      def flatMap[A, B](fa: Reader[A])(f: A => Reader[B]) = new Reader[B] {
+        def read(buf: NonEmptyList[Packet]) = {
+          for {
+            a <- fa.read(buf)
+            b <- f(a).read(buf)
+          } yield b
         }
       }
     }
-  }
 
-  implicit def caseClassReader[A, L <: HList](
-    implicit gen: Generic.Aux[A, L],
-    lr: Reader[L]
-  ): Reader[A] = new Reader[A] {
-    def read(packets: NonEmptyList[Packet]) = {
-      lr.read(packets).map(gen.from)
+  //Those methods are not wrapped with either, to reduce memory allocation probablly,
+  //Calls while be wrapped with either inside Codec.reader
+  object Unsafe {
+
+    def readUInt1(buf: BufferReader) = {
+      UInt1((buf.get & 0xff).toShort)
+    }
+
+    def readInt1(buf: BufferReader) = Int1(buf.get)
+
+    def readInt2(buf: BufferReader) = {
+      val bytes = buf.take(2)
+      val v     = bytes(0).toInt & 0xff | (bytes(1).toInt & 0xff << 8)
+      Int2(v)
+    }
+
+    def readInt3(buf: BufferReader) = {
+      val bytes = buf.take(3)
+      val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
+        2).toInt & 0xff) << 16)
+      Int3(v)
+    }
+
+    def readIntLE(buf: BufferReader) = {
+      val bytes = buf.take(4)
+      val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
+        2).toInt & 0xff) << 16) | (bytes(3).toInt & 0xff) << 24
+      IntLE(v)
+    }
+
+    def readN(buf: BufferReader, n: Int) = buf.take(n)
+
+    def readNullEnded(buf: BufferReader) = {
+      buf.takeWhile(_ != '\u0000')
     }
   }
-
 }
 
 object Codec {
@@ -70,11 +88,7 @@ object Codec {
         val buf: BufferReader = packets.map { p =>
           BufferReader(p.payload)
         }.reduceLeft(_ ++ _)
-        try {
-          Right(f(buf))
-        } catch {
-          case e: Throwable => Left(e)
-        }
+        Either.catchNonFatal(f(buf))
       }
     }
 

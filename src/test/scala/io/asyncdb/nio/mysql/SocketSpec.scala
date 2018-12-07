@@ -2,7 +2,7 @@ package io.asyncdb
 package nio
 package mysql
 
-import cats.effect.IO
+import cats.effect._
 import java.nio.ByteBuffer
 import java.nio.channels._
 import java.net.InetSocketAddress
@@ -17,16 +17,12 @@ abstract class SocketSpec extends AsyncFreeSpec with Matchers {
     address = new InetSocketAddress("127.0.0.1", 3306),
     channel = AsynchronousSocketChannel.open(group),
     headerBuf = ByteBuffer.allocate(4),
-    payloadBuf = ???
+    payloadBuf = BufferPool.unpooled[IO](ByteBuffer.allocate)
   )
 
   private def connect = new MySQLSocket(ctx).connect
 
   protected def withSocket[A](f: MySQLSocket[IO] => IO[A]): IO[A] = {
-    for {
-      c <- connect
-      r <- f(c)
-      _ <- c.close()
-    } yield r
+    Resource.make(connect)(_.close).use(f)
   }
 }

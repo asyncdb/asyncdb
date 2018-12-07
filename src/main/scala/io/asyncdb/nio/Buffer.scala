@@ -26,11 +26,9 @@ object BufferReader {
 
   def apply(buf: Buf): BufferReader = new BufferReader {
 
-    val slice = buf.slice()
+    val init = buf.duplicate()
 
-    val init = slice.duplicate()
-
-    def get = slice.get
+    def get = buf.get
 
     def array = init.array()
 
@@ -40,13 +38,13 @@ object BufferReader {
 
     def take(n: Int) = {
       val arr = Array.ofDim[Byte](n)
-      slice.get(arr)
+      buf.get(arr)
       arr
     }
 
     def takeWhile(p: Byte => Boolean) = takeWhile0(p)._1
 
-    def hasRemaining = slice.hasRemaining()
+    def hasRemaining = buf.hasRemaining()
 
     def takeWhile0(p: Byte => Boolean) = {
 
@@ -55,10 +53,9 @@ object BufferReader {
         matches: Boolean,
         rs: ArrayBuffer[Byte]): (Boolean, ArrayBuffer[Byte]) = {
         if (buf.hasRemaining()) {
-          buf.mark()
-          val b = slice.get()
-          if (p(b)) {
-            buf.reset()
+          val b = get
+          if (!p(b)) {
+            buf.position(buf.position() - 1)
             (true, rs += b)
           } else {
             rs += b

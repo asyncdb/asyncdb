@@ -5,6 +5,7 @@ package mysql
 import java.nio.{ByteBuffer, ByteOrder}
 import scala.util.control.NonFatal
 
+case class UInt1(value: Short)                extends AnyVal
 case class Int1(value: Byte)                  extends AnyVal
 case class Int2(value: Int)                   extends AnyVal
 case class Int3(value: Int)                   extends AnyVal
