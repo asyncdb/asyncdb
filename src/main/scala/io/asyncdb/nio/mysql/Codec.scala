@@ -75,7 +75,9 @@ object Reader {
     def readN(buf: BufferReader, n: Int) = buf.take(n)
 
     def readNullEnded(buf: BufferReader) = {
-      buf.takeWhile(_ != '\u0000')
+      val v = buf.takeWhile(_ != '\u0000')
+      buf.get
+      v
     }
   }
 }

@@ -11,13 +11,19 @@ class HandshakeInitSpec extends SocketSpec {
 
   val initBytes = Hex.toBytes(
     """0a352e352e352d31302e312e33312d4d617269614442002500000026712d277d614c3a00fff7e002003fa015000000000000000000007b2335234c376f4859687e61006d7973716c5f6e61746976655f70617373776f726400""")
+  val initBytes56 = Hex.toBytes(
+    """0a352e372e31332d6c6f6700160c0000533f5d042025172900ffff210200ffc1150000000000000000000027105a290c1f3a71111b5b68006d7973716c5f6e61746976655f70617373776f726400""")
 
   val handshakePacket =
     Packet(Int3(initBytes.size), Int1(0), ByteBuffer.wrap(initBytes))
+  val handshakePacket56 =
+    Packet(Int3(initBytes56.size), Int1(0), ByteBuffer.wrap(initBytes56))
 
   "HandshakeInit" - {
     "decode init packet" in {
-      Codec.read[HandshakeInit](NonEmptyList.one(handshakePacket)) should be(
+      //Codec.read[HandshakeInit](NonEmptyList.one(handshakePacket)) should be(
+      //'right)
+      Codec.read[HandshakeInit](NonEmptyList.one(handshakePacket56)) should be(
         'right)
     }
     "connect to server" in withSocket { socket =>
