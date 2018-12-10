@@ -37,10 +37,8 @@ object BufferReader {
     def size = init.remaining()
 
     def take(n: Int) = {
-      println(s"before take $n: ${buf.remaining()}")
       val arr = Array.ofDim[Byte](n)
       buf.get(arr)
-      println(s"after take $n: ${buf.remaining()}")
       arr
     }
 
