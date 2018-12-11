@@ -17,11 +17,12 @@ private[nio] object NioSocket {
 
 private[nio] abstract class NioSocket[F[_]](
   ctx: NioSocket.Context[F]
-)(implicit F: Async[F]) extends Socket[F, Buf]{
+)(implicit F: Async[F])
+    extends Socket[F, Buf] {
 
-  val channel = ctx.channel
+  val channel   = ctx.channel
   val allocator = ctx.allocator
-  val address = ctx.address
+  val address   = ctx.address
 
   def connect = F.async[this.type] { cb =>
     val ch = AsynchronousSocketChannel.open()

@@ -15,9 +15,7 @@ trait Writer[A] {
   def write(a: A): NonEmptyList[Packet]
 }
 
-object Writer {
-
-}
+object Writer {}
 
 object Reader {
 
