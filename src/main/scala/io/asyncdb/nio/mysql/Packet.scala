@@ -14,7 +14,8 @@ object Packet {
 
   def decodeLength(bytes: Array[Byte]) = {
     val len = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
-      2).toInt & 0xff) << 16)
+      2
+    ).toInt & 0xff) << 16)
     int3(len)
   }
 

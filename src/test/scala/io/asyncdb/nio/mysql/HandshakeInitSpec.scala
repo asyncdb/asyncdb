@@ -21,8 +21,8 @@ class HandshakeInitSpec extends SocketSpec {
 
   "HandshakeInit" - {
     "decode init packet" in {
-      //Codec.read[HandshakeInit](NonEmptyList.one(handshakePacket)) should be(
-      //'right)
+      Codec.read[HandshakeInit](NonEmptyList.one(handshakePacket)) should be(
+        'right)
       Codec.read[HandshakeInit](NonEmptyList.one(handshakePacket56)) should be(
         'right)
     }

@@ -14,7 +14,8 @@ object CharsetMap {
       US_ASCII
     else
       throw new IllegalArgumentException(
-        "Charset %d is not supported.".format(charset))
+        "Charset %d is not supported.".format(charset)
+      )
 
   /**
    * SELECT id,collation_name FROM information_schema.collations

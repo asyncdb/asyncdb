@@ -1,48 +1,57 @@
 package io.asyncdb
 package nio
 
-import cats.Eval
-import cats.effect.Async
+import cats.syntax.all._
+import cats.effect._
 import java.net.SocketAddress
-import java.nio._
-import java.nio.channels.CompletionHandler
+import java.nio.channels.AsynchronousSocketChannel
 import java.util.concurrent.TimeUnit
 
-trait SocketContext {
-  val channel: ASC
-  val address: SocketAddress
+private[nio] object NioSocket {
+  case class Context[F[_]](
+    address: SocketAddress,
+    channel: ASC,
+    allocator: Allocator[F]
+  )
 }
 
-private[nio] abstract class Socket[F[_], I, O](ctx: SocketContext)(
-  implicit F: Async[F]) {
+private[nio] abstract class NioSocket[F[_]](
+  ctx: NioSocket.Context[F]
+)(implicit F: Async[F]) extends Socket[F, Buf]{
+
+  val channel = ctx.channel
+  val allocator = ctx.allocator
+  val address = ctx.address
 
   def connect = F.async[this.type] { cb =>
-    ctx.channel
-      .connect(ctx.address, null, Handler(cb(Right(this)))(t => cb(Left(t))))
+    val ch = AsynchronousSocketChannel.open()
+    channel
+      .connect(address, null, Handler(cb(Right(this)))(t => cb(Left(t))))
   }
 
-  def close(): F[Unit] = F.delay {
-    ctx.channel.close()
+  def disconnect(): F[Unit] = F.delay {
+    channel.close()
   }
 
   def write(buf: Buf, timeout: Long) = {
     F.async[Unit] { k =>
-      ctx.channel.write(
+      channel.write(
         buf,
         timeout,
         TimeUnit.MILLISECONDS, {},
-        Handler[Integer, Unit](_ => {})(_ => {}))
+        Handler[Integer, Unit](_ => {})(_ => {})
+      )
     }
   }
 
-  def readN(n: Int, buf: Buf, timeout: Long): F[Buf] = {
+  def readN(n: Int, timeout: Long): F[Buf] = allocator.acquire(n).use { buf =>
     F.async[Buf] { cb =>
       def doRead(t: Long): Unit = t match {
         case t if t <= 0 =>
           cb(Left(Timeout(s"Cannot read ${n} after ${timeout}ms")))
         case _ =>
           val start = System.currentTimeMillis
-          ctx.channel
+          channel
             .read(buf, t, TimeUnit.MILLISECONDS, null, Handler[Integer, Any] {
               len: Integer =>
                 val took = System.currentTimeMillis - start

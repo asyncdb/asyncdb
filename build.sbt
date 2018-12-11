@@ -15,4 +15,7 @@ scalacOptions ++= Seq(
 
 fork in Test := true
 
-scalafmtOnCompile in ThisBuild := true
+(scalafmtOnCompile in ThisBuild) := true
+(compile in Compile) := {
+  (compile in Compile).dependsOn(scalafmtSbt in Compile).value
+}
