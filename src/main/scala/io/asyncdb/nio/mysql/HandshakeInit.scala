@@ -72,8 +72,6 @@ object HandshakeInit {
       b <- basicHandshakeDataReader
       e <- extraHandshakeDataReader
     } yield {
-      println(b)
-      println(e)
       val c = CharsetMap.of(e.characterSet.value)
       HandshakeInit(
         protocol = b.protocol.value,
