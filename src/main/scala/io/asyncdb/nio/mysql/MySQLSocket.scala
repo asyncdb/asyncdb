@@ -9,28 +9,22 @@ import cats.effect.{Async, Bracket}
 import java.net.SocketAddress
 import java.nio.ByteBuffer
 
-case class MySQLSocketContext[F[_]](
-  address: SocketAddress,
-  channel: ASC,
-  headerBuf: Buf,
-  payloadBuf: BufferPool[F]
-) extends SocketContext
-
-class MySQLSocket[F[_]](ctx: MySQLSocketContext[F])(
+class MySQLSocket[F[_]](ctx: NioSocket.Context[F])(
   implicit F: Async[F],
-  B: Bracket[F, Throwable])
-    extends Socket(ctx) {
+  B: Bracket[F, Throwable]
+) extends NioSocket(ctx) {
+
+  val headerBuf = ByteBuffer.allocate(4)
 
   private def readPacket(timeout: Long): F[Packet] = {
     val start = System.currentTimeMillis
-    ctx.headerBuf.clear()
-    F.flatMap(readN(4, ctx.headerBuf, timeout)) { header =>
+    F.flatMap(readN(4, timeout)) { header =>
       val remain = System.currentTimeMillis - start
       val bs     = header.array
       val len    = Packet.decodeLength(bs)
       val seq    = Packet.decodeSeq(bs)
-      ctx.payloadBuf.acquire(len.value).use { buf =>
-        F.map(readN(len.value, buf, remain)) { payload =>
+      allocator.acquire(len.value).use { buf =>
+        F.map(readN(len.value, remain)) { payload =>
           Packet(len, seq, payload)
         }
       }

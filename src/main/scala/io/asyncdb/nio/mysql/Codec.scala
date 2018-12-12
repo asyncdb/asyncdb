@@ -15,6 +15,8 @@ trait Writer[A] {
   def write(a: A): NonEmptyList[Packet]
 }
 
+object Writer {}
+
 object Reader {
 
   implicit val readerMonadError: MonadError[Reader, Throwable] =
@@ -61,21 +63,25 @@ object Reader {
     def readInt3(buf: BufferReader) = {
       val bytes = buf.take(3)
       val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
-        2).toInt & 0xff) << 16)
+        2
+      ).toInt & 0xff) << 16)
       Int3(v)
     }
 
     def readIntLE(buf: BufferReader) = {
       val bytes = buf.take(4)
       val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
-        2).toInt & 0xff) << 16) | (bytes(3).toInt & 0xff) << 24
+        2
+      ).toInt & 0xff) << 16) | (bytes(3).toInt & 0xff) << 24
       IntLE(v)
     }
 
     def readN(buf: BufferReader, n: Int) = buf.take(n)
 
     def readNullEnded(buf: BufferReader) = {
-      buf.takeWhile(_ != '\u0000')
+      val v = buf.takeWhile(_ != '\u0000')
+      buf.get
+      v
     }
   }
 }
@@ -93,7 +99,8 @@ object Codec {
     }
 
   def read[A](buf: NonEmptyList[Packet])(
-    implicit reader: Reader[A]): Either[Throwable, A] = reader.read(buf)
+    implicit reader: Reader[A]
+  ): Either[Throwable, A] = reader.read(buf)
 
   def write[A](a: A)(implicit writer: Writer[A]) =
     writer.write(a)

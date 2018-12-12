@@ -32,8 +32,6 @@ object BufferReader {
 
     def array = init.array()
 
-    def bufs = NonEmptyList.one(buf)
-
     def size = init.remaining()
 
     def take(n: Int) = {
@@ -51,7 +49,8 @@ object BufferReader {
       @scala.annotation.tailrec
       def loop(
         matches: Boolean,
-        rs: ArrayBuffer[Byte]): (Boolean, ArrayBuffer[Byte]) = {
+        rs: ArrayBuffer[Byte]
+      ): (Boolean, ArrayBuffer[Byte]) = {
         if (buf.hasRemaining()) {
           val b = get
           if (!p(b)) {
