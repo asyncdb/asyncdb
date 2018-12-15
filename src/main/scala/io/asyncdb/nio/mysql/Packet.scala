@@ -2,6 +2,8 @@ package io.asyncdb
 package nio
 package mysql
 
+import java.nio.ByteBuffer
+
 /**
  * Data structure
  */
@@ -24,4 +26,19 @@ object Packet {
   }
 
   final val MaxInt3 = 0x00ffffff
+
+  def toPacket(buf: Buf) = {
+    println(s"the length is ${buf.position() - 4}")
+    Packet(Int3(buf.position() - 4), Int1(0), buf)
+  }
+
+  def toBuf(packet: Packet) = {
+    val buf = packet.payload
+    val len = packet.len.value
+    buf.position(0)
+    buf.put((len & 0xff).toByte)
+    buf.put((len >>> 8).toByte)
+    buf.put((len >>> 16).toByte)
+    buf.put(packet.seq.value)
+  }
 }

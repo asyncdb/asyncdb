@@ -15,7 +15,6 @@ trait BufferReader {
   def ++(r: BufferReader): BufferReader = new BufferReader.Append(this, r)
   def array: Array[Byte]
   def hasRemaining: Boolean
-
   protected def takeWhile0(p: Byte => Boolean): (Array[Byte], Boolean)
 }
 

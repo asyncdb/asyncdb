@@ -52,5 +52,10 @@ class MySQLSocket[F[_]](ctx: NioSocket.Context[F])(
     Codec.read[A](packet)
   }
 
-  def write[A: Writer](a: A, timeout: Long) = {}
+  def write[A: Writer](a: A, timeout: Long) = {
+    def writeP(p: Packet) = {
+      super.write(Packet.toBuf(p), timeout)
+    }
+    Codec.write(a).traverse(writeP(_))
+  }
 }

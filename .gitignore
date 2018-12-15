@@ -4,3 +4,5 @@ GTAGS
 GRTAGS
 GPATH
 .bloop/
+.idea
+.idea/

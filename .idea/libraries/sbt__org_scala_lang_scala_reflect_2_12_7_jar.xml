@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="sbt: org.scala-lang:scala-reflect:2.12.7:jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.sbt/boot/scala-2.12.7/lib/scala-reflect.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-reflect/srcs/scala-reflect-2.12.7-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

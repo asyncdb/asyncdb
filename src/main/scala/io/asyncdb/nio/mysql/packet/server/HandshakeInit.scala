@@ -1,10 +1,13 @@
 package io.asyncdb
 package nio
 package mysql
+package packet
+package server
+
+import java.nio.charset.Charset
 
 import cats.syntax.all._
-import java.nio.charset.{Charset, StandardCharsets}
-import Reader.Unsafe
+import io.asyncdb.nio.mysql.Reader.Unsafe
 
 /**
  * https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeV10
@@ -15,7 +18,8 @@ case class HandshakeInit(
   connectionId: Int,
   authPluginData: Array[Byte],
   charset: Charset,
-  cap: Int
+  cap: Int,
+  authenticationMethod: String
 )
 
 case class ExtraHandshakeData(
@@ -24,7 +28,8 @@ case class ExtraHandshakeData(
   capabilityFlagUpper: Int2,
   authPluginDataLen: Int1,
   reserved: Array[Byte],
-  authPluginDataPart2: Array[Byte]
+  authPluginDataPart2: Array[Byte],
+  authenticationMethod: Array[Byte]
 )
 
 case class BasicHandshakeData(
@@ -57,13 +62,15 @@ object HandshakeInit {
       val pdl      = Unsafe.readInt1(buf)
       val reserved = Unsafe.readN(buf, 10)
       val apd2     = Unsafe.readN(buf, math.max(13, pdl.value - 8))
+      val am       = Unsafe.readNullEnded(buf)
       ExtraHandshakeData(
         characterSet = c,
         statusFlags = sf,
         capabilityFlagUpper = cfu,
         authPluginDataLen = pdl,
         reserved = reserved,
-        authPluginDataPart2 = apd2
+        authPluginDataPart2 = apd2,
+        authenticationMethod = am
       )
     }
 
@@ -79,7 +86,8 @@ object HandshakeInit {
         connectionId = b.connectionId.value,
         authPluginData = b.authPluginDataPart1 ++ e.authPluginDataPart2,
         charset = c,
-        cap = b.capabilityFlagLower.value & e.capabilityFlagUpper.value
+        cap = b.capabilityFlagLower.value & e.capabilityFlagUpper.value,
+        authenticationMethod = new String(e.authenticationMethod, c)
       )
     }
   }

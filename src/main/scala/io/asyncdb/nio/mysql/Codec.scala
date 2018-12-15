@@ -2,9 +2,12 @@ package io.asyncdb
 package nio
 package mysql
 
+import java.nio.charset.Charset
+
 import cats._
 import cats.data.NonEmptyList
 import cats.syntax.all._
+
 import scala.util._
 
 trait Reader[A] {
@@ -83,6 +86,28 @@ object Reader {
       buf.get
       v
     }
+
+    def writeInt(buf: BufferWriter, value: Int) = {
+      buf.writeInt(value)
+    }
+
+    def writeByte(buf: BufferWriter, value: Int) = {
+      buf.writeByte(value)
+    }
+
+    def writeBytes(buf: BufferWriter, value: Array[Byte]) = {
+      buf.writeBytes(value)
+    }
+
+    def writeNullEndedString(
+      buf: BufferWriter,
+      value: String,
+      charset: Charset
+    ) = {
+      writeBytes(buf, value.getBytes(charset))
+      buf.writeByte(0)
+    }
+
   }
 }
 
@@ -97,6 +122,12 @@ object Codec {
         Either.catchNonFatal(f(buf))
       }
     }
+
+  def writer[A](f: A => NonEmptyList[Packet]): Writer[A] = new Writer[A] {
+    def write(a: A) = {
+      f(a)
+    }
+  }
 
   def read[A](buf: NonEmptyList[Packet])(
     implicit reader: Reader[A]

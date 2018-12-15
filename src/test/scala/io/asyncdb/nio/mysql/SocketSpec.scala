@@ -12,7 +12,8 @@ import org.scalatest._
 abstract class SocketSpec extends AsyncFreeSpec with Matchers {
   val group = AsynchronousChannelGroup.withFixedThreadPool(
     4,
-    Executors.defaultThreadFactory())
+    Executors.defaultThreadFactory()
+  )
   val ctx = new NioSocket.Context[IO](
     address = new InetSocketAddress("127.0.0.1", 3306),
     channel = AsynchronousSocketChannel.open(group),

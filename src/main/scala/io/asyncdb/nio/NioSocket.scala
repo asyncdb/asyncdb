@@ -7,6 +7,8 @@ import java.net.SocketAddress
 import java.nio.channels.AsynchronousSocketChannel
 import java.util.concurrent.TimeUnit
 
+import io.asyncdb.util.Hex
+
 private[nio] object NioSocket {
   case class Context[F[_]](
     address: SocketAddress,
@@ -35,6 +37,9 @@ private[nio] abstract class NioSocket[F[_]](
   }
 
   def write(buf: Buf, timeout: Long) = {
+    println("-------")
+    println(Hex.fromBytes(buf.array()))
+    println(timeout)
     F.async[Unit] { k =>
       channel.write(
         buf,
