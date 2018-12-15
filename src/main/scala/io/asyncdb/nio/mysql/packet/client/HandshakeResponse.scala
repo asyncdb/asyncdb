@@ -70,7 +70,7 @@ object Authentication {
   ) = {
     authType match {
       case Native => scramble411(charset, password, seed)
-      case _      => scramble411(charset, password, seed)
+      case _      => scramble411(charset, password, seed) // 老模式是否需要支持
     }
   }
 
