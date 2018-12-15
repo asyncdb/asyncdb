@@ -7,7 +7,6 @@ package server
 import java.nio.charset.Charset
 
 import cats.syntax.all._
-import io.asyncdb.nio.mysql.Reader.Unsafe
 
 /**
  * https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::HandshakeV10

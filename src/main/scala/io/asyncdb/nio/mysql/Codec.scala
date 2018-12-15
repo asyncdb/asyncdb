@@ -46,69 +46,96 @@ object Reader {
         }
       }
     }
+}
 
-  //Those methods are not wrapped with either, to reduce memory allocation probablly,
-  //Calls while be wrapped with either inside Codec.reader
-  object Unsafe {
+//Those methods are not wrapped with either, to reduce memory allocation probablly,
+//Calls while be wrapped with either inside Codec.reader
+object Unsafe {
 
-    def readUInt1(buf: BufferReader) = {
-      UInt1((buf.get & 0xff).toShort)
-    }
-
-    def readInt1(buf: BufferReader) = Int1(buf.get)
-
-    def readInt2(buf: BufferReader) = {
-      val bytes = buf.take(2)
-      val v     = bytes(0).toInt & 0xff | (bytes(1).toInt & 0xff << 8)
-      Int2(v)
-    }
-
-    def readInt3(buf: BufferReader) = {
-      val bytes = buf.take(3)
-      val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
-        2
-      ).toInt & 0xff) << 16)
-      Int3(v)
-    }
-
-    def readIntLE(buf: BufferReader) = {
-      val bytes = buf.take(4)
-      val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
-        2
-      ).toInt & 0xff) << 16) | (bytes(3).toInt & 0xff) << 24
-      IntLE(v)
-    }
-
-    def readN(buf: BufferReader, n: Int) = buf.take(n)
-
-    def readNullEnded(buf: BufferReader) = {
-      val v = buf.takeWhile(_ != '\u0000')
-      buf.get
-      v
-    }
-
-    def writeInt(buf: BufferWriter, value: Int) = {
-      buf.writeInt(value)
-    }
-
-    def writeByte(buf: BufferWriter, value: Int) = {
-      buf.writeByte(value)
-    }
-
-    def writeBytes(buf: BufferWriter, value: Array[Byte]) = {
-      buf.writeBytes(value)
-    }
-
-    def writeNullEndedString(
-      buf: BufferWriter,
-      value: String,
-      charset: Charset
-    ) = {
-      writeBytes(buf, value.getBytes(charset))
-      buf.writeByte(0)
-    }
-
+  def readUInt1(buf: BufferReader) = {
+    UInt1((buf.get & 0xff).toShort)
   }
+
+  def readInt1(buf: BufferReader) = Int1(buf.get)
+
+  def readInt2(buf: BufferReader) = {
+    val bytes = buf.take(2)
+    val v     = bytes(0).toInt & 0xff | (bytes(1).toInt & 0xff << 8)
+    Int2(v)
+  }
+
+  def readInt3(buf: BufferReader) = {
+    val bytes = buf.take(3)
+    val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
+      2
+    ).toInt & 0xff) << 16)
+    Int3(v)
+  }
+
+  def readIntLE(buf: BufferReader) = {
+    val bytes = buf.take(4)
+    val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
+      2
+    ).toInt & 0xff) << 16) | (bytes(3).toInt & 0xff) << 24
+    IntLE(v)
+  }
+
+  def readLongLE(buf: BufferReader) = {
+    val bytes = buf.take(8)
+//    bytes.zipWithIndex.foldLeft(0L) { (a,b) =>  //会不会有性能影响
+//      a | ((b._1.toLong & 0xff) << 8 * b._2)
+//    }
+    val v = (bytes(0).toInt & 0xff) | ((bytes(1).toInt & 0xff) << 8) | ((bytes(
+      2
+    ).toInt & 0xff) << 16) | (bytes(3).toInt & 0xff) << 24 | (bytes(4).toInt & 0xff) << 32 | (bytes(
+      5
+    ).toInt & 0xff) << 40 | (bytes(6).toInt & 0xff) << 48 | (bytes(7).toInt & 0xff) << 56
+    LengthLong(v)
+  }
+
+  def readLengthLong(buf: BufferReader) = {
+    val first = (buf.get & 0xff).toShort
+    if (first <= 250) {
+      LengthLong(first)
+    } else {
+      first match {
+        case 251 => LengthLong(-1)
+        case 252 => LengthLong(readInt2(buf).value)
+        case 253 => LengthLong(readInt3(buf).value)
+        case 254 => readLongLE(buf)
+      }
+    }
+  }
+
+  def readN(buf: BufferReader, n: Int) = buf.take(n)
+
+  def readNullEnded(buf: BufferReader) = {
+    val v = buf.takeWhile(_ != '\u0000')
+    buf.get
+    v
+  }
+
+  def writeInt(buf: BufferWriter, value: Int) = {
+    buf.writeInt(value)
+  }
+
+  def writeByte(buf: BufferWriter, value: Int) = {
+    buf.writeByte(value)
+  }
+
+  def writeBytes(buf: BufferWriter, value: Array[Byte]) = {
+    buf.writeBytes(value)
+  }
+
+  def writeNullEndedString(
+    buf: BufferWriter,
+    value: String,
+    charset: Charset
+  ) = {
+    writeBytes(buf, value.getBytes(charset))
+    buf.writeByte(0)
+  }
+
 }
 
 object Codec {

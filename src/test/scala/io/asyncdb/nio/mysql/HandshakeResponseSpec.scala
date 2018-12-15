@@ -5,7 +5,7 @@ package packet
 package client
 
 import cats.effect.IO
-import io.asyncdb.nio.mysql.packet.server.HandshakeInit
+import io.asyncdb.nio.mysql.packet.server.{HandshakeInit, OK}
 
 class HandshakeResponseSpec extends SocketSpec {
   "HandshakeResponse" - {
@@ -13,10 +13,12 @@ class HandshakeResponseSpec extends SocketSpec {
       socket.read[HandshakeInit](1000).flatMap {
         case Left(ex) => IO(Left(ex))
         case Right(r) =>
-          socket.write[HandshakeResponse](
-            HandshakeResponseSpec.getHandshakeResponse(r),
-            1000
-          )
+          socket
+            .write[HandshakeResponse](
+              HandshakeResponseSpec.getHandshakeResponse(r),
+              1000
+            )
+            .flatMap(_ => socket.read[OK](1000))
       }
     }.unsafeToFuture.map { r =>
       println(r)

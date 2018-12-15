@@ -8,7 +8,6 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 
 import cats.data.NonEmptyList
-import io.asyncdb.nio.mysql.Reader.Unsafe
 
 case class HandshakeResponse(
   username: String,
