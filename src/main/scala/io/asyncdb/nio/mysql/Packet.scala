@@ -29,7 +29,7 @@ object Packet {
 
   def toPacket(buf: Buf) = {
     println(s"the length is ${buf.position() - 4}")
-    Packet(Int3(buf.position() - 4), Int1(0), buf)
+    Packet(Int3(buf.position() - 5), Int1(1), buf)
   }
 
   def toBuf(packet: Packet) = {

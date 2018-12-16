@@ -31,9 +31,9 @@ class HandshakeResponseSpec extends SocketSpec {
       username = "test",
       charset = CharsetMap.Utf8_bin,
       seed = hi.authPluginData,
-      authenticationMethod = hi.authenticationMethod
-//      password = Some("hMCCUMe7RCthstbT"),
-//      database = Some("test")
+      authenticationMethod = hi.authenticationMethod,
+      password = Some("hMCCUMe7RCthstbT"),
+      database = Some("test")
     )
   }
 }

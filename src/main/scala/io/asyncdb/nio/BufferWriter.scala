@@ -1,6 +1,6 @@
 package io.asyncdb.nio
 
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 
 trait BufferWriter {
   def writeInt(value: Int)
@@ -8,6 +8,7 @@ trait BufferWriter {
   def writeBytes(value: Array[Byte])
   def array: Array[Byte]
   def value: ByteBuffer
+  def order(value: ByteOrder): ByteBuffer
 }
 
 object BufferWriter {
@@ -28,6 +29,8 @@ object BufferWriter {
       buf.put(value)
     }
     def array() = init.array()
+
+    def order(value: ByteOrder) = buf.order(value)
 
     def value = buf
   }

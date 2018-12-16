@@ -4,6 +4,7 @@ package mysql
 package packet
 package client
 
+import java.nio.ByteOrder
 import java.nio.charset.Charset
 import java.security.MessageDigest
 
@@ -23,7 +24,10 @@ object HandshakeResponse {
   implicit val handshakeResponseWriter: Writer[HandshakeResponse] = {
     Codec.writer[HandshakeResponse] { hr =>
       val buf = BufferWriter.apply(1024)
-      buf.writeInt(Cap.baseCap.mask)
+      buf.order(ByteOrder.LITTLE_ENDIAN)
+//      buf.writeInt(Cap.baseCap.mask)
+//      println(s"the clientCapabilities is ${Cap.baseCap.mask}")
+      buf.writeInt(696840)
       buf.writeInt(MaxPacketSize)
       buf.writeByte(hr.charset.toByte)
       buf.writeBytes(Padding)
