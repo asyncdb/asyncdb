@@ -28,7 +28,7 @@ object Packet {
   final val MaxInt3 = 0x00ffffff
 
   def toPacket(buf: Buf) = {
-    println(s"the length is ${buf.position() - 4}")
+    println(s"the length is ${buf.position() - 5}")
     Packet(Int3(buf.position() - 5), Int1(1), buf)
   }
 

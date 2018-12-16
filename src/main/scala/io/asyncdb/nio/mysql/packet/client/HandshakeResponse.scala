@@ -9,6 +9,7 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 
 import cats.data.NonEmptyList
+import io.asyncdb.util.Hex
 
 case class HandshakeResponse(
   username: String,
@@ -89,9 +90,14 @@ object Authentication {
     messageDigest.reset()
     messageDigest.update(seed)
     messageDigest.update(finalDigest)
-    val result = messageDigest.digest()
-    (0 to result.length - 1)
-      .map(i => result(i) = (result(i) ^ initialDigest(i)).toByte)
+    val result  = messageDigest.digest()
+    var counter = 0
+    println(s"r1:${Hex.fromBytes(result)}")
+    while (counter < result.length) {
+      result(counter) = (result(counter) ^ initialDigest(counter)).toByte
+      counter += 1
+    }
+    println(s"r2:${Hex.fromBytes(result)}")
     result
   }
 }
