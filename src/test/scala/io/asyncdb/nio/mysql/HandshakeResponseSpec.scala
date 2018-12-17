@@ -18,7 +18,10 @@ class HandshakeResponseSpec extends SocketSpec {
               HandshakeResponseSpec.getHandshakeResponse(r),
               1000
             )
-            .flatMap(_ => socket.read[OK](1000))
+            .flatMap { _ =>
+              println(s"Start reading ok")
+              socket.read[OK](1000)
+            }
       }
     }.unsafeToFuture.map { r =>
       println(r)

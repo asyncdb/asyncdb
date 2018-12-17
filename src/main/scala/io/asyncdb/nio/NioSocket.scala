@@ -50,7 +50,7 @@ private[nio] abstract class NioSocket[F[_]](
         bu,
         timeout,
         TimeUnit.MILLISECONDS, {},
-        Handler[Integer, Unit](_ => {})(_ => {})
+        Handler[Integer, Unit](_ => k(Right({})))(e => k(Left(e)))
       )
     }
   }
