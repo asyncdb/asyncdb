@@ -26,9 +26,7 @@ object HandshakeResponse {
     Codec.writer[HandshakeResponse] { hr =>
       val buf = BufferWriter.apply(1024)
       buf.order(ByteOrder.LITTLE_ENDIAN)
-//      buf.writeInt(Cap.baseCap.mask)
-//      println(s"the clientCapabilities is ${Cap.baseCap.mask}")
-      buf.writeInt(696840)
+      buf.writeInt(Cap.baseCap.mask)
       buf.writeInt(MaxPacketSize)
       buf.writeByte(hr.charset.toByte)
       buf.writeBytes(Padding)
