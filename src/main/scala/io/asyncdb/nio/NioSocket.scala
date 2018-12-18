@@ -38,8 +38,8 @@ private[nio] abstract class NioSocket[F[_]](
   }
 
   def write(buf: Buf, timeout: Long) = {
-    println("-------")
-    println(Hex.fromBytes(buf.array()))
+//    println("-------")
+//    println(Hex.fromBytes(buf.array()))
 //    val t =
 //      "5500000108a20a00ffffff00530000000000000000000000000000000000000000000000746573740014acf9e19c917a181a945cc051823c7de45d806ded74657374006d7973716c5f6e61746976655f70617373776f726400"
 //    val b  = Hex.toBytes(t)

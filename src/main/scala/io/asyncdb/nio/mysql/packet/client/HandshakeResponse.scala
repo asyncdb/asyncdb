@@ -24,12 +24,13 @@ object HandshakeResponse {
   val Padding = Array.fill[Byte](23)(0)
   implicit val handshakeResponseWriter: Writer[HandshakeResponse] = {
     Codec.writer[HandshakeResponse] { hr =>
-      val buf = BufferWriter.apply(1024)
+      val buf = BufferWriter.mysqlPacket(1024)
       buf.order(ByteOrder.LITTLE_ENDIAN)
 //      buf.writeInt(Cap.baseCap.mask)
 //      println(s"the clientCapabilities is ${Cap.baseCap.mask}")
       buf.writeInt(696840)
       buf.writeInt(MaxPacketSize)
+      println(s"hr.charset is ${hr.charset}")
       buf.writeByte(hr.charset.toByte)
       buf.writeBytes(Padding)
       Unsafe.writeNullEndedString(
@@ -83,21 +84,29 @@ object Authentication {
     password: String,
     seed: Array[Byte]
   ) = {
+    val s: Array[Byte] = Array(51, 117, 120, 70, 98, 122, 88, 88, 116, 33, 47,
+      93, 115, 56, 23, 31, 105, 96, 38, 8)
     val messageDigest = MessageDigest.getInstance("SHA-1")
     val initialDigest = messageDigest.digest(password.getBytes(charset))
     messageDigest.reset()
     val finalDigest = messageDigest.digest(initialDigest)
     messageDigest.reset()
-    messageDigest.update(seed)
+//    messageDigest.update(seed)
+    messageDigest.update(s)
     messageDigest.update(finalDigest)
-    val result  = messageDigest.digest()
+    val result = messageDigest.digest()
+    result.foreach(r => print(s"${r}:"))
+    println()
+    initialDigest.foreach(r => print(s"${r};"))
+    println()
     var counter = 0
-    println(s"r1:${Hex.fromBytes(result)}")
+//    println(s"r1:${Hex.fromBytes(result)}")
     while (counter < result.length) {
       result(counter) = (result(counter) ^ initialDigest(counter)).toByte
+      print(s"${result(counter)},")
       counter += 1
     }
-    println(s"r2:${Hex.fromBytes(result)}")
+//    println(s"r2:${Hex.fromBytes(result)}")
     result
   }
 }

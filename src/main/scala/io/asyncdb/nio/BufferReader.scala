@@ -1,7 +1,10 @@
 package io.asyncdb
 package nio
 
+import java.nio.{ByteBuffer, ByteOrder}
+
 import cats.data.NonEmptyList
+
 import scala.collection.mutable.ArrayBuffer
 
 /**

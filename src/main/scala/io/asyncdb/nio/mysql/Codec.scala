@@ -2,6 +2,7 @@ package io.asyncdb
 package nio
 package mysql
 
+import java.nio.ByteOrder
 import java.nio.charset.Charset
 
 import cats._
@@ -60,7 +61,8 @@ object Unsafe {
 
   def readInt2(buf: BufferReader) = {
     val bytes = buf.take(2)
-    val v     = bytes(0).toInt & 0xff | (bytes(1).toInt & 0xff << 8)
+    println(s"the bytes(0) is ${bytes(0).toInt}")
+    val v = bytes(0).toInt & 0xff | (bytes(1).toInt & 0xff << 8)
     Int2(v)
   }
 
@@ -111,7 +113,9 @@ object Unsafe {
 
   def readNullEnded(buf: BufferReader) = {
     val v = buf.takeWhile(_ != '\u0000')
-    buf.get
+    if (buf.hasRemaining) {
+      buf.get
+    }
     v
   }
 

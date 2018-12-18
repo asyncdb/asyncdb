@@ -13,11 +13,13 @@ trait BufferWriter {
 
 object BufferWriter {
   def apply(size: Int): BufferWriter = apply(ByteBuffer.allocate(size))
+  def mysqlPacket(size: Int): BufferWriter =
+    apply(ByteBuffer.allocate(size).putInt(0)) ////是否预留4个字节用于长度和序号？还是拼装一个新的buffer
   def apply(buf: Buf) = new BufferWriter {
-    val init = {
-      buf.duplicate()
-      buf.putInt(0) //是否预留4个字节用于长度和序号？还是拼装一个新的buffer
-    }
+//    def init = {
+//      buf.duplicate()
+//      buf.putInt(0) //是否预留4个字节用于长度和序号？还是拼装一个新的buffer
+//    }
 
     def writeInt(value: Int) = {
       buf.putInt(value)
@@ -28,7 +30,7 @@ object BufferWriter {
     def writeBytes(value: Array[Byte]) = {
       buf.put(value)
     }
-    def array() = init.array()
+    def array() = buf.array()
 
     def order(value: ByteOrder) = buf.order(value)
 

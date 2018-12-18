@@ -5,11 +5,11 @@ package packet
 package client
 
 import cats.effect.IO
-import io.asyncdb.nio.mysql.packet.server.{HandshakeInit, OK}
+import io.asyncdb.nio.mysql.packet.server.{HandshakeInit, OK, Error}
 
 class HandshakeResponseSpec extends SocketSpec {
   "HandshakeResponse" - {
-    "connect to server" in withSocket { socket =>
+    "auth to server" in withSocket { socket =>
       socket.read[HandshakeInit](1000).flatMap {
         case Left(ex) => IO(Left(ex))
         case Right(r) =>
@@ -19,8 +19,8 @@ class HandshakeResponseSpec extends SocketSpec {
               1000
             )
             .flatMap { _ =>
-              println(s"Start reading ok")
-              socket.read[OK](1000)
+              println(s"Start reading error")
+              socket.read[Error](1000)
             }
       }
     }.unsafeToFuture.map { r =>
@@ -32,7 +32,7 @@ class HandshakeResponseSpec extends SocketSpec {
   object HandshakeResponseSpec {
     def getHandshakeResponse(hi: HandshakeInit) = HandshakeResponse(
       username = "test",
-      charset = CharsetMap.Utf8_bin,
+      charset = CharsetMap.Utf8_general_ci,
       seed = hi.authPluginData,
       authenticationMethod = hi.authenticationMethod,
       password = Some("hMCCUMe7RCthstbT"),
