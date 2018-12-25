@@ -23,8 +23,6 @@ abstract class NettySocket[F[_], M](
 
   def disconnect() = channel.flatMap(ch => F.delay(ch.close()))
 
-  protected def channel = config.channel.get.flatMap { eac =>
-    F.fromEither(eac)
-  }
+  protected def channel = config.channel.get.rethrow
 
 }
