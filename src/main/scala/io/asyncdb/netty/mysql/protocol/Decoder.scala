@@ -4,16 +4,58 @@ package mysql
 
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
+import java.nio.charset.Charset
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Internal api, not fully safe, should carefully dealed at call site.
  * The buffer passed to this decoder is raw data buffer, mysql seq and len head is striped
  */
-private[mysql] trait MessageDecoder[V] {
-  def decode(b: ByteBuf): V
+private[mysql] trait Decoder[V] {
+  def decode(b: ByteBuf, charset: Charset): V
+  def map[B](f: V => B): Decoder[B] = {
+    val vd = this
+    new Decoder[B] {
+      def decode(b: ByteBuf, charset: Charset) = {
+         f(vd.decode(b, charset))
+      }
+    }
+  }
 }
 
-private[mysql] final class PacketDecoder[V](md: MessageDecoder[V]){
+object Decoder {
+
+  private def decoderOf[V](f: ByteBuf => V): Decoder[V] = new Decoder[V] {
+    def decode(buf: ByteBuf, charset: Charset) = f(buf)
+  }
+
+  val int1: Decoder[Byte] = decoderOf(_.readByte)
+  val int2: Decoder[Int] = decoderOf(_.readShortLE)
+  val int3: Decoder[Int] = decoderOf(_.readMediumLE)
+  val int4: Decoder[Int] = decoderOf(_.readIntLE)
+
+  val uint1: Decoder[Short] = decoderOf[Short](_.readUnsignedByte)
+
+  def bytes(n: Int) = decoderOf { buf: ByteBuf =>
+    val arr = Array.ofDim[Byte](n)
+    buf.readBytes(arr)
+    arr
+  }
+  val ntBytes = decoderOf { buf: ByteBuf =>
+    def readUntilZero(read: ArrayBuffer[Byte]): ArrayBuffer[Byte] = {
+      val b = buf.readByte()
+      if(b != '\u0000') {
+        val after = read += b.toByte
+        readUntilZero(after)
+      } else read
+    }
+    val ab = readUntilZero(new ArrayBuffer[Byte])
+    ab.toArray
+  }
+
+}
+
+private[mysql] final class PacketDecoder[V](md: Decoder[V]){
   def isReady(buf: ByteBuf): Boolean = {
     @annotation.tailrec
     def isLastPacketReady(fromOffset: Int): Boolean = {
@@ -41,7 +83,8 @@ private[mysql] final class PacketDecoder[V](md: MessageDecoder[V]){
     }
   }
 
-  def decode(buf: ByteBuf) = {
-    Unpooled.wrappedBuffer(dataBuffer(buf, buf.readerIndex(), Vector.empty).toArray: _*)
+  def decode(buf: ByteBuf, charset: Charset) = {
+    val rawBuff = Unpooled.wrappedBuffer(dataBuffer(buf, buf.readerIndex(), Vector.empty).toArray: _*)
+    md.decode(rawBuff, charset)
   }
 }

@@ -10,9 +10,7 @@ import cats.data.NonEmptyList
 class MySQLSocket[F[_]](config: NettySocketConfig[F], state: Ref[F, Deferred[F, Either[Throwable, Message]]])
   (implicit F: Concurrent[F]) extends NettySocket[F, Message](config) {
 
-  def read() = state.get.flatMap { d =>
-    d.get
-  }.rethrow
+  def read() = state.get.flatMap(_.get.rethrow)
 
   def write(n: Message) = {
     channel.flatMap(_.write(n).to[F]).void
