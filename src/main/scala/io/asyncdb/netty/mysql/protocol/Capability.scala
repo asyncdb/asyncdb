@@ -1,4 +1,4 @@
-package io.asyncdb.netty.mysql
+package io.asyncdb.nio.mysql
 
 /**
  * Stolen from finagle mysql client
