@@ -56,6 +56,7 @@ object HandshakeInit {
   }
 
   import Decoder._
+
   implicit val handshakeInitDecoder: Decoder[HandshakeInit] = {
     val basic = (int1 :: ntBytes :: int4 :: bytes(8) :: int1 :: int2)
       .as[BasicHandshakeData]
