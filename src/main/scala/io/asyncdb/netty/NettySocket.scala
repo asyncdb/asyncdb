@@ -12,17 +12,30 @@ case class NettySocketConfig[F[_]](
   channel: Deferred[F, Either[Throwable, Channel]]
 )
 
-abstract class NettySocket[F[_], M](
-  config: NettySocketConfig[F])(implicit F: Concurrent[F]) extends Socket[F, M] {
+abstract class NettySocket[F[_], M](config: NettySocketConfig[F])(
+  implicit F: Concurrent[F]
+) extends Socket[F, M] {
 
   def connect = F.delay(config.bootstrap.connect()).flatMap { f =>
-    f.to[F].attempt.flatMap { e =>
-      config.channel.complete(e.map(_.channel()))
-    }.as(this)
+    f.to[F]
+      .attempt
+      .flatMap { e =>
+        config.channel.complete(e.map(_.channel()))
+      }
+      .as(this)
   }
 
   def disconnect() = channel.flatMap(ch => F.delay(ch.close()))
 
   protected def channel = config.channel.get.rethrow
 
+}
+
+object NettySocket {
+
+  def newConfig[F[_]: Concurrent](bootstrap: Bootstrap): F[NettySocketConfig[F]] = {
+    Deferred[F, Either[Throwable, Channel]].map { defer =>
+      NettySocketConfig[F](bootstrap, defer)
+    }
+  }
 }

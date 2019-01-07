@@ -19,13 +19,13 @@ case class HandshakeInit(
   charset: Charset,
   cap: Int,
   authenticationMethod: String
-)
+) extends Message
 
 case class ExtraHandshakeData(
   characterSet: Short,
   statusFlags: Int,
   capabilityFlagUpper: Int,
-  authPluginDataLen: Int,
+  authPluginDataLen: Byte,
   reserved: Array[Byte],
   authPluginDataPart2: Array[Byte],
   authenticationMethod: Array[Byte]
@@ -41,13 +41,31 @@ case class BasicHandshakeData(
 )
 
 object HandshakeInit {
-  import Decoder._
-  implicit val handshakeInitDecoder: Decoder[HandshakeInit] = new Decoder[HandshakeInit] {
-    def decode(buf: ByteBuf, charset: Charset) = {
-      val basic = (int1 :: ntBytes :: int4 :: bytes(8) :: int1 :: int2).as[BasicHandshakeData]
-      (uint1 :: int2 :: int2 :: int1 :: bytes(10))
-      ???
-    }
 
+  private def apply(b: BasicHandshakeData, e: ExtraHandshakeData) = {
+     val c = CharsetMap.of(e.characterSet)
+      new HandshakeInit(
+        protocol = b.protocol,
+        version = new String(b.version, c),
+        connectionId = b.connectionId,
+        authPluginData = b.authPluginDataPart1 ++ e.authPluginDataPart2,
+        charset = c,
+        cap = b.capabilityFlagLower & e.capabilityFlagUpper,
+        authenticationMethod = new String(e.authenticationMethod, c)
+      )
+  }
+
+  import Decoder._
+  implicit val handshakeInitDecoder: Decoder[HandshakeInit] = {
+    val basic = (int1 :: ntBytes :: int4 :: bytes(8) :: int1 :: int2)
+      .as[BasicHandshakeData]
+    val extra = (uint1 :: int2 :: int2 :: int1.flatMap { pdl =>
+      val apd2Len = math.max(13, pdl - 8)
+      Decoder.pure(pdl) :: bytes(10) :: bytes(apd2Len) :: ntBytes
+    }).as[ExtraHandshakeData]
+    for {
+      b <- basic
+      e <- extra
+    } yield apply(b, e)
   }
 }
