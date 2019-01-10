@@ -74,7 +74,7 @@ class PacketsEncoder[V] {
     val headByts  = Array.ofDim[Byte](4)
     val headerBuf = Unpooled.wrappedBuffer(headByts)
     headerBuf
-      .writeMediumLE(len)
+      .writeUnsignedMediumLE(len)
       .writeByte(seq)
     Unpooled.wrappedBuffer(headerBuf, payload)
   }
