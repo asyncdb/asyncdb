@@ -15,6 +15,16 @@ import scala.collection.mutable.ArrayBuffer
  */
 private[mysql] trait Decoder[V] {
   def decode(b: ByteBuf, charset: Charset): V
+
+  def map[B](f: (V, Charset) => B): Decoder[B] = {
+    val vd = this
+    new Decoder[B] {
+      def decode(b: ByteBuf, charset: Charset) = {
+        f(vd.decode(b, charset), charset)
+      }
+    }
+  }
+
   def map[B](f: V => B): Decoder[B] = {
     val vd = this
     new Decoder[B] {
@@ -37,9 +47,10 @@ private[mysql] trait Decoder[V] {
 
 object Decoder {
 
-  def decode[V](buf: ByteBuf, charset: Charset)(implicit decoder: Decoder[V]) = Either.catchNonFatal {
-    decoder.decode(buf, charset)
-  }
+  def decode[V](buf: ByteBuf, charset: Charset)(implicit decoder: Decoder[V]) =
+    Either.catchNonFatal {
+      decoder.decode(buf, charset)
+    }
 
   def pure[V](v: V): Decoder[V] = new Decoder[V] {
     def decode(buf: ByteBuf, charset: Charset) = {
@@ -47,16 +58,14 @@ object Decoder {
     }
   }
 
-
   private def decoderOf[V](f: ByteBuf => V): Decoder[V] = new Decoder[V] {
     def decode(buf: ByteBuf, charset: Charset) = f(buf)
   }
 
   val int1: Decoder[Byte] = decoderOf(_.readByte)
-  val int2: Decoder[Int]  = decoderOf(_.readShortLE)
-  val int3: Decoder[Int]  = decoderOf(_.readMediumLE)
-  val int4: Decoder[Int]  = decoderOf(_.readIntLE)
-
+  val intL2: Decoder[Int]  = decoderOf(_.readShortLE)
+  val intL3: Decoder[Int]  = decoderOf(_.readMediumLE)
+  val intL4: Decoder[Int]  = decoderOf(_.readIntLE)
   val uint1: Decoder[Short] = decoderOf[Short](_.readUnsignedByte)
 
   def bytes(n: Int) = decoderOf { buf: ByteBuf =>
@@ -64,6 +73,12 @@ object Decoder {
     buf.readBytes(arr)
     arr
   }
+
+
+  def str(size: Int) = bytes(size).map { (bytes, charset) =>
+    new String(bytes, charset)
+  }
+
   val ntBytes = decoderOf { buf: ByteBuf =>
     def readUntilZero(read: ArrayBuffer[Byte]): ArrayBuffer[Byte] = {
       val b = buf.readByte()
@@ -88,7 +103,7 @@ private[mysql] final class PacketDecoder[V](md: Decoder[V]) {
     def isLastPacketReady(fromOffset: Int): Boolean = {
       val headReady = buf.readableBytes() >= fromOffset + 4
       headReady && {
-        val packetLen   = buf.getUnsignedMediumLE(fromOffset)
+        val packetLen = buf.getUnsignedMediumLE(fromOffset)
         println(packetLen)
         val packetReady = (buf.readableBytes() - fromOffset) >= packetLen + 4
         val isLast      = packetLen < Packet.MaxSize
@@ -122,7 +137,7 @@ private[mysql] final class PacketDecoder[V](md: Decoder[V]) {
 
   def decode(buf: ByteBuf, charset: Charset) = Either.catchNonFatal {
     val payloads = payloadBufs(buf, buf.readerIndex(), Vector.empty)
-    val rawBuff = Unpooled.wrappedBuffer(payloads.toArray: _*)
+    val rawBuff  = Unpooled.wrappedBuffer(payloads.toArray: _*)
     md.decode(rawBuff, charset)
   }
 }

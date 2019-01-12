@@ -33,7 +33,9 @@ abstract class NettySocket[F[_], M](config: NettySocketConfig[F])(
 
 object NettySocket {
 
-  def newConfig[F[_]: Concurrent](bootstrap: Bootstrap): F[NettySocketConfig[F]] = {
+  def newConfig[F[_]: Concurrent](
+    bootstrap: Bootstrap
+  ): F[NettySocketConfig[F]] = {
     Deferred[F, Either[Throwable, Channel]].map { defer =>
       NettySocketConfig[F](bootstrap, defer)
     }

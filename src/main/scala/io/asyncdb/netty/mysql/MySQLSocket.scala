@@ -10,7 +10,7 @@ import io.netty.bootstrap.Bootstrap
 
 class MySQLSocket[F[_]](
   config: NettySocketConfig[F],
-  ref:  MsgRef[F]
+  ref: MsgRef[F]
 )(implicit F: Concurrent[F])
     extends NettySocket[F, Message](config) {
 
@@ -21,14 +21,13 @@ class MySQLSocket[F[_]](
   }
 }
 
-
 object MySQLSocket {
   def apply[F[_]: ConcurrentEffect](bootstrap: Bootstrap) = {
     val msgRef = MVar[F].empty[Either[Throwable, Message]]
     for {
       ref <- msgRef
       codec = new FrameCodec[F](ref)
-      _ = bootstrap.handler(codec)
+      _     = bootstrap.handler(codec)
       config <- NettySocket.newConfig(bootstrap)
     } yield new MySQLSocket[F](config, ref)
   }

@@ -20,31 +20,71 @@ trait Encoder[A] {
 
 object Encoder {
 
-  val int1: Encoder[Int] = new Encoder[Int] {
-    def encode(v: Int, buf: ByteBuf, charset: Charset) = {
+  val int1: Encoder[Byte] = new Encoder[Byte] {
+    def encode(v: Byte, buf: ByteBuf, charset: Charset) = {
       buf.ensureWritable(1)
-      buf.writeByte(v)
+      buf.writeByte(v & 0xf)
     }
   }
 
-  val int2: Encoder[Int] = new Encoder[Int] {
+  val intL2: Encoder[Int] = new Encoder[Int] {
     def encode(v: Int, buf: ByteBuf, charset: Charset) = {
       buf.ensureWritable(2)
       buf.writeShortLE(v)
     }
   }
 
-  val int3: Encoder[Int] = new Encoder[Int] {
+  val intL3: Encoder[Int] = new Encoder[Int] {
     def encode(v: Int, buf: ByteBuf, charset: Charset) = {
       buf.ensureWritable(3)
       buf.writeMediumLE(v)
     }
   }
 
-  val int4: Encoder[Int] = new Encoder[Int] {
+  val intL4: Encoder[Int] = new Encoder[Int] {
     def encode(v: Int, buf: ByteBuf, charset: Charset) = {
       buf.ensureWritable(4)
       buf.writeIntLE(v)
+    }
+  }
+
+  val intL8: Encoder[Long] = new Encoder[Long] {
+    def encode(v: Long, buf: ByteBuf, charset: Charset) = {
+      buf.ensureWritable(8)
+      buf.writeLongLE(v)
+    }
+  }
+
+  val lenencInt: Encoder[Long] = new Encoder[Long] {
+    def encode(v: Long, buf: ByteBuf, charset: Charset) = {
+      if(v < 251) {
+        buf.writeByte(v.toByte)
+      } else if(v < 0x100000) {
+        buf.writeByte(0xFC)
+        intL2.encode(v.toInt, buf, charset)
+      } else if(v < 0x1000000) {
+        buf.writeByte(0xFD)
+        intL3.encode(v.toInt, buf, charset)
+      } else {
+        buf.writeByte(0xFE)
+        intL8.encode(v, buf, charset)
+      }
+    }
+  }
+
+  val lenencText: Encoder[String] = new Encoder[String] {
+    def encode(v: String, buf: ByteBuf, charset: Charset) = {
+      val charBytes = v.getBytes(charset)
+      val l = charBytes.size
+      lenencInt.encode(l, buf, charset)
+      bytes(l).encode(charBytes, buf, charset)
+    }
+  }
+
+  val uint1: Encoder[Short] = new Encoder[Short] {
+    def encode(v: Short, buf: ByteBuf, charset: Charset) = {
+      buf.ensureWritable(1)
+      buf.writeByte(v)
     }
   }
 
@@ -63,9 +103,6 @@ object Encoder {
     }
   }
 
-  val hnil: Encoder[HNil] = new Encoder[HNil] {
-    def encode(v: HNil, buf: ByteBuf, charset: Charset) = {}
-  }
 }
 
 class PacketsEncoder[V] {
@@ -74,7 +111,7 @@ class PacketsEncoder[V] {
     val headByts  = Array.ofDim[Byte](4)
     val headerBuf = Unpooled.wrappedBuffer(headByts)
     headerBuf
-      .writeUnsignedMediumLE(len)
+      .writeMediumLE(len)
       .writeByte(seq)
     Unpooled.wrappedBuffer(headerBuf, payload)
   }

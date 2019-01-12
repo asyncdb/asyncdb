@@ -43,24 +43,24 @@ case class BasicHandshakeData(
 object HandshakeInit {
 
   private def apply(b: BasicHandshakeData, e: ExtraHandshakeData) = {
-     val c = CharsetMap.of(e.characterSet)
-      new HandshakeInit(
-        protocol = b.protocol,
-        version = new String(b.version, c),
-        connectionId = b.connectionId,
-        authPluginData = b.authPluginDataPart1 ++ e.authPluginDataPart2,
-        charset = c,
-        cap = b.capabilityFlagLower & e.capabilityFlagUpper,
-        authenticationMethod = new String(e.authenticationMethod, c)
-      )
+    val c = CharsetMap.of(e.characterSet)
+    new HandshakeInit(
+      protocol = b.protocol,
+      version = new String(b.version, c),
+      connectionId = b.connectionId,
+      authPluginData = b.authPluginDataPart1 ++ e.authPluginDataPart2,
+      charset = c,
+      cap = b.capabilityFlagLower & e.capabilityFlagUpper,
+      authenticationMethod = new String(e.authenticationMethod, c)
+    )
   }
 
   import Decoder._
 
   implicit val handshakeInitDecoder: Decoder[HandshakeInit] = {
-    val basic = (int1 :: ntBytes :: int4 :: bytes(8) :: int1 :: int2)
+    val basic = (int1 :: ntBytes :: intL4 :: bytes(8) :: int1 :: intL2)
       .as[BasicHandshakeData]
-    val extra = (uint1 :: int2 :: int2 :: int1.flatMap { pdl =>
+    val extra = (uint1 :: intL2 :: intL2 :: int1.flatMap { pdl =>
       val apd2Len = math.max(13, pdl - 8)
       Decoder.pure(pdl) :: bytes(10) :: bytes(apd2Len) :: ntBytes
     }).as[ExtraHandshakeData]
