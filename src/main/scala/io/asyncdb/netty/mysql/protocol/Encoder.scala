@@ -7,7 +7,29 @@ import java.nio.charset.Charset
 import shapeless._
 
 trait Encoder[A] {
+
   def encode(v: A, buf: ByteBuf, charset: Charset): Unit
+
+  def productL[B](f: A => B, e: Encoder[B]): Encoder[A] = {
+    val ae = this
+    new Encoder[A] {
+      def encode(a: A, buf: ByteBuf, charset: Charset) = {
+
+      }
+    }
+  }
+
+  def * : Encoder[Seq[A]] = {
+    val ae = this
+    new Encoder[Seq[A]] {
+      def encode(v: Seq[A], buf: ByteBuf, charset: Charset) = {
+        v.foreach { a =>
+          ae.encode(a, buf, charset)
+        }
+      }
+    }
+  }
+
   def contramap[B](f: B => A): Encoder[B] = {
     val ae = this
     new Encoder[B] {
@@ -16,9 +38,27 @@ trait Encoder[A] {
       }
     }
   }
+
+  def ? : Encoder[Option[A]] = {
+    val ae = this
+    new Encoder[Option[A]] {
+      def encode(v: Option[A], buf: ByteBuf, charset: Charset) = {
+        v.foreach { vv =>
+          ae.encode(vv, buf, charset)
+        }
+      }
+    }
+  }
+
 }
 
 object Encoder {
+
+  def apply[A](f: A => Encoder[A]): Encoder[A] = new Encoder[A] {
+    def encode(a: A, buf: ByteBuf, charset: Charset) = {
+      f(a).encode(a, buf, charset)
+    }
+  }
 
   val int1: Encoder[Byte] = new Encoder[Byte] {
     def encode(v: Byte, buf: ByteBuf, charset: Charset) = {
@@ -72,12 +112,20 @@ object Encoder {
     }
   }
 
+  val lenencBytes: Encoder[Array[Byte]] = new Encoder[Array[Byte]] {
+    def encode(ba: Array[Byte], buf: ByteBuf, charset: Charset) = {
+      val l = ba.size
+      lenencInt.encode(l, buf, charset)
+      bytes.encode(ba, buf, charset)
+    }
+  }
+
   val lenencText: Encoder[String] = new Encoder[String] {
     def encode(v: String, buf: ByteBuf, charset: Charset) = {
       val charBytes = v.getBytes(charset)
       val l = charBytes.size
       lenencInt.encode(l, buf, charset)
-      bytes(l).encode(charBytes, buf, charset)
+      bytes.encode(charBytes, buf, charset)
     }
   }
 
@@ -88,7 +136,7 @@ object Encoder {
     }
   }
 
-  def bytes(n: Int): Encoder[Array[Byte]] = new Encoder[Array[Byte]] {
+  val bytes: Encoder[Array[Byte]] = new Encoder[Array[Byte]] {
     def encode(v: Array[Byte], buf: ByteBuf, charset: Charset) = {
       buf.ensureWritable(v.size)
       buf.writeBytes(v)
@@ -105,18 +153,19 @@ object Encoder {
 
 }
 
-class PacketsEncoder[V] {
+object PacketsEncoder {
 
   @inline private def packet(seq: Int, len: Int, payload: ByteBuf) = {
     val headByts  = Array.ofDim[Byte](4)
     val headerBuf = Unpooled.wrappedBuffer(headByts)
+    headerBuf.clear
     headerBuf
       .writeMediumLE(len)
       .writeByte(seq)
     Unpooled.wrappedBuffer(headerBuf, payload)
   }
 
-  def encodes[V](v: V, buf: ByteBuf, charset: Charset)(
+  def encode[V](v: V, buf: ByteBuf, charset: Charset)(
     implicit ve: Encoder[V]
   ) = {
     val fullBuf    = ve.encode(v, buf, charset)
@@ -130,13 +179,14 @@ class PacketsEncoder[V] {
     ): Vector[ByteBuf] = {
       if (fullLength - from >= Packet.MaxSize) {
         val len = Packet.MaxSize
-        val p   = packet(seq, len, buf.slice(from, from + len))
+        val p   = packet(seq, len, buf.slice(from, from + len).retain)
         splitPackets(from + len, seq + 1, previous :+ p)
       } else {
         val len = fullLength - from
-        val p   = packet(seq, len, buf.slice(from, fullLength))
+        val p   = packet(seq, len, buf.slice(from, fullLength).retain)
         previous :+ p
       }
     }
+    splitPackets(0, 0, Vector.empty)
   }
 }

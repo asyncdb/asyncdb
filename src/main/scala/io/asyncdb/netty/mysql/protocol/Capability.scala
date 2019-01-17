@@ -1,4 +1,6 @@
-package io.asyncdb.nio.mysql
+package io.asyncdb
+package netty
+package mysql
 
 /**
  * Stolen from finagle mysql client
@@ -22,6 +24,7 @@ object Cap {
   val MultiStatements  = 0x10000 // Enable/disable multi-stmt support
   val MultiResults     = 0x20000 // Enable/disable multi-results
   val PluginAuth       = 0x80000 // supports auth plugins
+  val PluginAuthLenencData = 0x200000
 
   val CapabilityMap = Map(
     "CLIENT_LONG_PASSWORD"     -> LongPassword,

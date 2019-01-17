@@ -8,21 +8,34 @@ import cats.syntax.all._
 import io.asyncdb.netty.mysql.protocol.server._
 import io.netty.buffer._
 import io.netty.channel._
-import io.netty.handler.codec.ByteToMessageCodec
+import io.netty.handler.codec._
 import io.netty.util.AttributeKey
 import java.nio.charset.Charset
+import protocol.client._
+import protocol.server._
 
-class FrameCodec[F[_]: ConcurrentEffect](ref: MsgRef[F])
-    extends ByteToMessageCodec[Message] {
+class FrameEncoder(charset: Short) extends ChannelOutboundHandlerAdapter {
+  val jcharset = CharsetMap.of(charset)
+  override def write(ctx: ChannelHandlerContext, msg: AnyRef, p: ChannelPromise) = {
+    msg match {
+      case m: HandshakeResponse =>
+        val buf = ctx.alloc().buffer(1024)
+        val bufs = PacketsEncoder.encode(m, buf, jcharset)
+        val wrapped = Unpooled.wrappedBuffer(bufs: _*)
+        ctx.write(wrapped, p)
+    }
+    ctx.flush()
+  }
+}
+
+class FrameDecoder[F[_]: ConcurrentEffect](ref: MsgRef[F])
+    extends ByteToMessageDecoder {
 
   private val initStateKey: AttributeKey[InitState] =
     AttributeKey.valueOf("InitState")
 
-  override def encode(
-    ctx: ChannelHandlerContext,
-    msg: Message,
-    out: ByteBuf
-  ) = {}
+  private val charsetKey: AttributeKey[Short] =
+    AttributeKey.valueOf("Charset")
 
   override def decode(
     ctx: ChannelHandlerContext,
@@ -33,9 +46,8 @@ class FrameCodec[F[_]: ConcurrentEffect](ref: MsgRef[F])
       case InitState.WaitHandshakeInit =>
         val pd = PacketDecoder[HandshakeInit]
         if (pd.isReady(in)) {
-          ref.put {
-            pd.decode(in, Charset.defaultCharset())
-          }.toIO.unsafeRunSync()
+          val m = pd.decode(in, Charset.defaultCharset())
+          ref.put(m).toIO.unsafeRunSync()
         }
       case InitState.ReceivedHandshakeInit =>
         ???
@@ -46,5 +58,9 @@ class FrameCodec[F[_]: ConcurrentEffect](ref: MsgRef[F])
 
   override def handlerAdded(ctx: ChannelHandlerContext) = {
     ctx.channel().attr(initStateKey).set(InitState.WaitHandshakeInit)
+  }
+
+  private def charset[A](ctx: ChannelHandlerContext, k: AttributeKey[A]) = {
+    ctx.channel().attr(charsetKey).get
   }
 }

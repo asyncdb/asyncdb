@@ -104,7 +104,6 @@ private[mysql] final class PacketDecoder[V](md: Decoder[V]) {
       val headReady = buf.readableBytes() >= fromOffset + 4
       headReady && {
         val packetLen = buf.getUnsignedMediumLE(fromOffset)
-        println(packetLen)
         val packetReady = (buf.readableBytes() - fromOffset) >= packetLen + 4
         val isLast      = packetLen < Packet.MaxSize
         packetReady && (isLast || isLastPacketReady(fromOffset + packetLen + 4))

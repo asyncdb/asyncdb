@@ -7,37 +7,27 @@ import cats.effect.concurrent.Deferred
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 
-case class NettySocketConfig[F[_]](
-  bootstrap: Bootstrap,
-  channel: Deferred[F, Either[Throwable, Channel]]
-)
+trait NettySocketConfig {
+  val bootstrap: Bootstrap
+}
 
-abstract class NettySocket[F[_], M](config: NettySocketConfig[F])(
+abstract class NettySocket[F[_], M](
+  config: NettySocketConfig,
+  channelHolder: Deferred[F, Either[Throwable, Channel]])(
   implicit F: Concurrent[F]
 ) extends Socket[F, M] {
 
-  def connect = F.delay(config.bootstrap.connect()).flatMap { f =>
+  protected def open = F.delay(config.bootstrap.connect()).flatMap { f =>
     f.to[F]
       .attempt
       .flatMap { e =>
-        config.channel.complete(e.map(_.channel()))
+        channelHolder.complete(e.map(_.channel()))
       }
       .as(this)
   }
 
-  def disconnect() = channel.flatMap(ch => F.delay(ch.close()))
+  protected def close = channel.flatMap(ch => F.delay(ch.close()))
 
-  protected def channel = config.channel.get.rethrow
+  protected def channel = channelHolder.get.rethrow
 
-}
-
-object NettySocket {
-
-  def newConfig[F[_]: Concurrent](
-    bootstrap: Bootstrap
-  ): F[NettySocketConfig[F]] = {
-    Deferred[F, Either[Throwable, Channel]].map { defer =>
-      NettySocketConfig[F](bootstrap, defer)
-    }
-  }
 }

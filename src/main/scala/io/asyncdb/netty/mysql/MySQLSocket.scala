@@ -7,14 +7,39 @@ import cats.effect._
 import cats.effect.concurrent._
 import cats.data.NonEmptyList
 import io.netty.bootstrap.Bootstrap
+import io.netty.channel.{Channel, ChannelInitializer}
+import protocol.client._
+import protocol.server._
+
+
+
+case class MySQLSocketConfig(
+  bootstrap: Bootstrap,
+  database: String,
+  username: String,
+  password: String,
+  charset: Short
+) extends NettySocketConfig
 
 class MySQLSocket[F[_]](
-  config: NettySocketConfig[F],
+  config: MySQLSocketConfig,
+  channelHolder: Deferred[F, Either[Throwable, Channel]],
   ref: MsgRef[F]
 )(implicit F: Concurrent[F])
-    extends NettySocket[F, Message](config) {
+    extends NettySocket[F, Message](config, channelHolder) {
+
+  def connect = open.flatMap { ch =>
+    ch.read().flatMap {
+      case init: HandshakeInit =>
+        val resp = HandshakeResponse(init, config.charset, config.database, config.username, config.password)
+        write(resp).as(this)
+      case m => F.raiseError(new IllegalStateException(s"HandshakeInit message expected but got $m"))
+    }
+  }
 
   def read() = ref.take.rethrow
+
+  def disconnect = close.void
 
   def write(n: Message) = {
     channel.flatMap(_.write(n).to[F]).void
@@ -22,13 +47,22 @@ class MySQLSocket[F[_]](
 }
 
 object MySQLSocket {
-  def apply[F[_]: ConcurrentEffect](bootstrap: Bootstrap) = {
+  def apply[F[_]: ConcurrentEffect](config: MySQLSocketConfig) = {
     val msgRef = MVar[F].empty[Either[Throwable, Message]]
     for {
       ref <- msgRef
-      codec = new FrameCodec[F](ref)
-      _     = bootstrap.handler(codec)
-      config <- NettySocket.newConfig(bootstrap)
-    } yield new MySQLSocket[F](config, ref)
+      decoder = new FrameDecoder[F](ref)
+      encoder = new FrameEncoder(config.charset)
+      init = new ChannelInitializer[Channel] {
+        override def initChannel(channel: Channel): Unit = {
+          channel
+            .pipeline()
+            .addLast("MySQLFrameDecoder", decoder)
+            .addLast("MySQLFrameEncoder", encoder)
+        }
+      }
+      _     = config.bootstrap.handler(init)
+      channel <- Deferred[F, Either[Throwable, Channel]]
+    } yield new MySQLSocket[F](config, channel, ref)
   }
 }

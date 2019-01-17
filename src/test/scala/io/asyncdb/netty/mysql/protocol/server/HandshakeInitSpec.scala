@@ -8,24 +8,22 @@ import cats.effect._
 import io.netty.buffer.Unpooled
 import java.nio.charset.Charset
 
-class HandshakeInitSpec extends SocketSpec {
+class HandshakeInitSpec extends Spec {
 
   val CS = Charset.defaultCharset()
 
   "HandshakeInit" - {
-    "decode init packet" in {
-      Decoder.decode[HandshakeInit](HandshakeInit.MariaDB10, CS) should be('right)
-      Decoder.decode[HandshakeInit](HandshakeInit.MySQL56, CS) should be('right)
-    }
-    "connect to server" in withSocket { socket =>
-      socket.read.map { init =>
-        println(init)
-        init should be(an[HandshakeInit])
+    "decode init packet" - {
+       "MariaDB10" in {
+        Decoder.decode[HandshakeInit](Bytes.MariaDB10, CS) should be('right)
+      }
+       "MySQL56" in {
+        Decoder.decode[HandshakeInit](Bytes.MySQL56, CS) should be('right)
       }
     }
   }
 
-  object HandshakeInit {
+  object Bytes {
 
     val MariaDB10Bytes = HexDump.decode(
       """0a352e352e352d31302e312e33312d4d617269614442002500000026712d277d614c3a00fff7e002003fa015000000000000000000007b2335234c376f4859687e61006d7973716c5f6e61746976655f70617373776f726400"""
