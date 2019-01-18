@@ -4,5 +4,5 @@ package netty
 import cats.effect.concurrent._
 
 package object mysql {
-  type MsgRef[F[_]] = MVar[F, Either[Throwable, Message]]
+  type MsgRef[F[_]] = MVar[F, Message]
 }

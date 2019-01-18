@@ -3,7 +3,9 @@ package netty
 package mysql
 
 import cats.effect._
+import cats.effect.concurrent._
 import cats.effect.syntax.all._
+import cats.instances.option._
 import cats.syntax.all._
 import io.asyncdb.netty.mysql.protocol.server._
 import io.netty.buffer._
@@ -14,25 +16,35 @@ import java.nio.charset.Charset
 import protocol.client._
 import protocol.server._
 
-class FrameEncoder(charset: Short) extends ChannelOutboundHandlerAdapter {
-  val jcharset = CharsetMap.of(charset)
-  override def write(ctx: ChannelHandlerContext, msg: AnyRef, p: ChannelPromise) = {
-    msg match {
+class FrameEncoder[F[_]](config: MySQLSocketConfig)
+    extends ChannelOutboundHandlerAdapter {
+
+  override def write(
+    ctx: ChannelHandlerContext,
+    msg: AnyRef,
+    p: ChannelPromise
+  ) = {
+    println(s"write $msg")
+    val charset = CharsetMap.of(config.charset)
+    val packets = msg match {
       case m: HandshakeResponse =>
         val buf = ctx.alloc().buffer(1024)
-        val bufs = PacketsEncoder.encode(m, buf, jcharset)
-        val wrapped = Unpooled.wrappedBuffer(bufs: _*)
-        ctx.write(wrapped, p)
+        PacketsEncoder.encode(m, buf, charset)
     }
+    val wrapped = Unpooled.wrappedBuffer(packets: _*)
+    ctx.write(wrapped, p)
     ctx.flush()
   }
 }
 
-class FrameDecoder[F[_]: ConcurrentEffect](ref: MsgRef[F])
+class FrameDecoder[F[_]](
+  config: MySQLSocketConfig,
+  ctxRef: Ref[F, ChannelContext[F]],
+  msgRef: MsgRef[F]
+)(implicit F: ConcurrentEffect[F])
     extends ByteToMessageDecoder {
 
-  private val initStateKey: AttributeKey[InitState] =
-    AttributeKey.valueOf("InitState")
+  private val FSM = new StateMachine[F](config)
 
   private val charsetKey: AttributeKey[Short] =
     AttributeKey.valueOf("Charset")
@@ -42,25 +54,22 @@ class FrameDecoder[F[_]: ConcurrentEffect](ref: MsgRef[F])
     in: ByteBuf,
     out: java.util.List[AnyRef]
   ) = {
-    ctx.channel().attr(initStateKey).get match {
-      case InitState.WaitHandshakeInit =>
-        val pd = PacketDecoder[HandshakeInit]
-        if (pd.isReady(in)) {
-          val m = pd.decode(in, Charset.defaultCharset())
-          ref.put(m).toIO.unsafeRunSync()
-        }
-      case InitState.ReceivedHandshakeInit =>
-        ???
-      case InitState.ReceivedLoginResponse =>
-        ???
+    if (PacketDecoder.isReady(in)) {
+      ctxRef.access.flatMap {
+        case (old, updateF) =>
+          FSM.transition(in).run(old).flatMap {
+            case (nc, ChannelState.Result(o, e)) =>
+              val fireOutgoing = o.traverse { om =>
+                F.delay {
+                  ctx.channel().write(om)
+                }
+              }
+              val enqueueEmit = e.traverse { em =>
+                msgRef.put(em)
+              }
+              fireOutgoing *> enqueueEmit *> updateF(nc)
+          }
+      }.toIO.unsafeRunSync()
     }
-  }
-
-  override def handlerAdded(ctx: ChannelHandlerContext) = {
-    ctx.channel().attr(initStateKey).set(InitState.WaitHandshakeInit)
-  }
-
-  private def charset[A](ctx: ChannelHandlerContext, k: AttributeKey[A]) = {
-    ctx.channel().attr(charsetKey).get
   }
 }

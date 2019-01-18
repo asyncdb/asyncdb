@@ -34,10 +34,10 @@ object CharsetMap {
   /**
    * Some useful charset constants
    */
-  val Utf8_bin        = 83.toShort
-  val Utf8_general_ci = 33.toShort
+  val Utf8_bin           = 83.toShort
+  val Utf8_general_ci    = 33.toShort
   val Utf8mb4_general_ci = 45.toShort
-  val Binary          = 63.toShort
+  val Binary             = 63.toShort
 
   private[this] val CompatibleSet        = Latin1Set ++ Utf8Set + Binary
   def isCompatible(code: Short): Boolean = CompatibleSet(code)

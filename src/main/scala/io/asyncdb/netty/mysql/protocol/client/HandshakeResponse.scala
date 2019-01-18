@@ -25,20 +25,19 @@ case class HandshakeResponse(
 
 object HandshakeResponse {
 
-  def apply(
-    init: server.HandshakeInit,
-    charset: Short,
-    database: String,
-    username: String,
-    password: String) = {
+  def apply(init: server.HandshakeInit, config: MySQLSocketConfig) = {
 
     new HandshakeResponse(
       clientFlag = Cap.baseCap.mask,
       maxPacketSize = Packet.MaxSize,
-      charset = charset,
-      database = database,
-      username = username,
-      response = Auth.nativePassword(init.authPluginData, password, CharsetMap.of(charset)),
+      charset = config.charset,
+      database = config.database,
+      username = config.username,
+      response = Auth.nativePassword(
+        init.authPluginData,
+        config.password,
+        CharsetMap.of(config.charset)
+      ),
       authMethod = init.authenticationMethod,
       attrs = Seq.empty,
       filter = Array.fill(23)(0.toByte)
@@ -50,13 +49,16 @@ object HandshakeResponse {
   implicit val handshakeResponseEncoder: Encoder[HandshakeResponse] =
     Encoder[HandshakeResponse] { data =>
       val resp =
-        if(Cap(data.clientFlag).has(Cap.PluginAuthLenencData))
+        if (Cap(data.clientFlag).has(Cap.PluginAuthLenencData))
           lenencBytes
         else lenencBytes.productL(_.size.toLong, lenencInt)
-      val attrs = (lenencText :: lenencText).contramap[(String, String)] {
-        case (k, v) => k :: v :: HNil
-      }.*.productL(l => l.size.toLong, lenencInt)
-      (intL4 :: intL4 :: uint1 :: bytes :: ntText :: resp :: ntText :: ntText :: attrs).as[HandshakeResponse]
+      val attrs =
+        (lenencText :: lenencText)
+        .contramap[(String, String)] {
+          case (k, v) => k :: v :: HNil
+        }.*.productL(l => l.size.toLong, lenencInt)
+      (intL4 :: intL4 :: uint1 :: bytes :: ntText :: resp :: ntText :: ntText :: attrs)
+        .as[HandshakeResponse]
     }
 
 }

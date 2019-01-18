@@ -10,16 +10,15 @@ import java.net.InetSocketAddress
 import scala.concurrent.{Future, ExecutionContext}
 import scala.language.implicitConversions
 
-
 abstract class SocketSpec extends Spec {
 
-  implicit val contextShift = IO.contextShift(ExecutionContext.global)
+  implicit val contextShift                = IO.contextShift(ExecutionContext.global)
   implicit def effectAsFuture[A](f: IO[A]) = f.unsafeToFuture
 
-  val config =  {
+  val config = {
     val host: String = "127.0.0.1"
-    val port: Int = 3306
-    val address = new InetSocketAddress(host, port)
+    val port: Int    = 3306
+    val address      = new InetSocketAddress(host, port)
     val b = (new Bootstrap)
       .remoteAddress(address)
       .group(new NioEventLoopGroup())
@@ -33,11 +32,11 @@ abstract class SocketSpec extends Spec {
     )
   }
 
-
   def withSocket[A](f: MySQLSocket[IO] => IO[A]): IO[A] = {
 
-
-    Resource.make(MySQLSocket[IO](config).flatMap(_.connect))(_.disconnect).use(f)
+    Resource
+      .make(MySQLSocket[IO](config).flatMap(_.connect))(_.disconnect)
+      .use(f)
   }
 
 }

@@ -13,7 +13,8 @@ trait NettySocketConfig {
 
 abstract class NettySocket[F[_], M](
   config: NettySocketConfig,
-  channelHolder: Deferred[F, Either[Throwable, Channel]])(
+  channelHolder: Deferred[F, Either[Throwable, Channel]]
+)(
   implicit F: Concurrent[F]
 ) extends Socket[F, M] {
 

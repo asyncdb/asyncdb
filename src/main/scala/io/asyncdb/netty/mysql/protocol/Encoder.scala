@@ -13,9 +13,7 @@ trait Encoder[A] {
   def productL[B](f: A => B, e: Encoder[B]): Encoder[A] = {
     val ae = this
     new Encoder[A] {
-      def encode(a: A, buf: ByteBuf, charset: Charset) = {
-
-      }
+      def encode(a: A, buf: ByteBuf, charset: Charset) = {}
     }
   }
 
@@ -97,12 +95,12 @@ object Encoder {
 
   val lenencInt: Encoder[Long] = new Encoder[Long] {
     def encode(v: Long, buf: ByteBuf, charset: Charset) = {
-      if(v < 251) {
+      if (v < 251) {
         buf.writeByte(v.toByte)
-      } else if(v < 0x100000) {
+      } else if (v < 0x100000) {
         buf.writeByte(0xFC)
         intL2.encode(v.toInt, buf, charset)
-      } else if(v < 0x1000000) {
+      } else if (v < 0x1000000) {
         buf.writeByte(0xFD)
         intL3.encode(v.toInt, buf, charset)
       } else {
@@ -123,7 +121,7 @@ object Encoder {
   val lenencText: Encoder[String] = new Encoder[String] {
     def encode(v: String, buf: ByteBuf, charset: Charset) = {
       val charBytes = v.getBytes(charset)
-      val l = charBytes.size
+      val l         = charBytes.size
       lenencInt.encode(l, buf, charset)
       bytes.encode(charBytes, buf, charset)
     }
@@ -179,11 +177,11 @@ object PacketsEncoder {
     ): Vector[ByteBuf] = {
       if (fullLength - from >= Packet.MaxSize) {
         val len = Packet.MaxSize
-        val p   = packet(seq, len, buf.slice(from, from + len).retain)
+        val p   = packet(seq, len, buf.slice(from, from + len))
         splitPackets(from + len, seq + 1, previous :+ p)
       } else {
         val len = fullLength - from
-        val p   = packet(seq, len, buf.slice(from, fullLength).retain)
+        val p   = packet(seq, len, buf.slice(from, fullLength))
         previous :+ p
       }
     }

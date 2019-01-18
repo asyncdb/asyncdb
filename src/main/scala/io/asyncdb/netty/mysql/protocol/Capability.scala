@@ -6,24 +6,24 @@ package mysql
  * Stolen from finagle mysql client
  */
 object Cap {
-  val LongPassword     = 0x1     // new more secure passwords
-  val FoundRows        = 0x2     // Found instead of affected rows
-  val LongFlag         = 0x4     // Get all column flags
-  val ConnectWithDB    = 0x8     // One can specify db on connect
-  val NoSchema         = 0x10    // Don't allow database.table.column
-  val Compress         = 0x20    // Can use compression protocol
-  val ODBC             = 0x40    // Odbc client
-  val LocalFiles       = 0x80    // Can use LOAD DATA LOCAL
-  val IgnoreSpace      = 0x100   // Ignore spaces before '('
-  val Protocol41       = 0x200   // New 4.1 protocol
-  val Interactive      = 0x400   // This is an interactive client
-  val SSL              = 0x800   // Switch to SSL after handshake
-  val IgnoreSigPipe    = 0x1000  // IGNORE sigpipes
-  val Transactions     = 0x2000  // Client knows about transactions
-  val SecureConnection = 0x8000  // New 4.1 authentication
-  val MultiStatements  = 0x10000 // Enable/disable multi-stmt support
-  val MultiResults     = 0x20000 // Enable/disable multi-results
-  val PluginAuth       = 0x80000 // supports auth plugins
+  val LongPassword         = 0x1 // new more secure passwords
+  val FoundRows            = 0x2 // Found instead of affected rows
+  val LongFlag             = 0x4 // Get all column flags
+  val ConnectWithDB        = 0x8 // One can specify db on connect
+  val NoSchema             = 0x10 // Don't allow database.table.column
+  val Compress             = 0x20 // Can use compression protocol
+  val ODBC                 = 0x40 // Odbc client
+  val LocalFiles           = 0x80 // Can use LOAD DATA LOCAL
+  val IgnoreSpace          = 0x100 // Ignore spaces before '('
+  val Protocol41           = 0x200 // New 4.1 protocol
+  val Interactive          = 0x400 // This is an interactive client
+  val SSL                  = 0x800 // Switch to SSL after handshake
+  val IgnoreSigPipe        = 0x1000 // IGNORE sigpipes
+  val Transactions         = 0x2000 // Client knows about transactions
+  val SecureConnection     = 0x8000 // New 4.1 authentication
+  val MultiStatements      = 0x10000 // Enable/disable multi-stmt support
+  val MultiResults         = 0x20000 // Enable/disable multi-results
+  val PluginAuth           = 0x80000 // supports auth plugins
   val PluginAuthLenencData = 0x200000
 
   val CapabilityMap = Map(

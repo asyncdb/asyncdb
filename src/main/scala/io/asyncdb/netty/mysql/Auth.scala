@@ -7,9 +7,11 @@ import java.nio.charset.Charset
 
 object Auth {
 
-
-
-  def nativePassword(seed: Array[Byte], password: String, charset: Charset): Array[Byte] = {
+  def nativePassword(
+    seed: Array[Byte],
+    password: String,
+    charset: Charset
+  ): Array[Byte] = {
     val messageDigest = MessageDigest.getInstance("SHA-1")
     val initialDigest = messageDigest.digest(password.getBytes(charset))
     messageDigest.reset()

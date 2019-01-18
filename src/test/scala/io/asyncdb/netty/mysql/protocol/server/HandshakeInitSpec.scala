@@ -14,10 +14,10 @@ class HandshakeInitSpec extends Spec {
 
   "HandshakeInit" - {
     "decode init packet" - {
-       "MariaDB10" in {
+      "MariaDB10" in {
         Decoder.decode[HandshakeInit](Bytes.MariaDB10, CS) should be('right)
       }
-       "MySQL56" in {
+      "MySQL56" in {
         Decoder.decode[HandshakeInit](Bytes.MySQL56, CS) should be('right)
       }
     }
@@ -33,6 +33,6 @@ class HandshakeInitSpec extends Spec {
     )
 
     val MariaDB10 = Unpooled.wrappedBuffer(MariaDB10Bytes)
-    val MySQL56 = Unpooled.wrappedBuffer(MySQL56Bytes)
+    val MySQL56   = Unpooled.wrappedBuffer(MySQL56Bytes)
   }
 }
