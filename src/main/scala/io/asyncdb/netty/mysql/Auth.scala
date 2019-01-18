@@ -12,16 +12,17 @@ object Auth {
     password: String,
     charset: Charset
   ): Array[Byte] = {
-    val messageDigest = MessageDigest.getInstance("SHA-1")
-    val initialDigest = messageDigest.digest(password.getBytes(charset))
-    messageDigest.reset()
-    val finalDigest = messageDigest.digest(initialDigest)
-    messageDigest.reset()
-    messageDigest.update(seed)
-    messageDigest.update(finalDigest)
-    val result = messageDigest.digest()
-    (result.zip(initialDigest)).map {
-      case (a, b) => (a & b).toByte
+    val md = MessageDigest.getInstance("SHA-1")
+    val hash1 = md.digest(password.getBytes(charset))
+    md.reset()
+    val hash2 = md.digest(hash1)
+    md.reset()
+    md.update(seed)
+    md.update(hash2)
+    val digest = md.digest()
+    (0 until digest.length) foreach { i =>
+      digest(i) = (digest(i) ^ hash1(i)).toByte
     }
+    digest
   }
 }

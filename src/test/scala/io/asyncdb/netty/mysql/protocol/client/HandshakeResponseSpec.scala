@@ -4,4 +4,6 @@ package mysql
 package protocol
 package client
 
-class HandshakeResponseSpec extends Spec {}
+class HandshakeResponseSpec extends Spec {
+
+}

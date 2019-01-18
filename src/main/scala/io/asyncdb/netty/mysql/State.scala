@@ -26,6 +26,11 @@ object ChannelState {
 
   object ReadForCommand extends ChannelState
 
+  /**
+   * Result produced by a state transition.
+   * @param outgoing message send to server if any.
+   * @param emit message emit to client if any(will be used for client read).
+   */
   case class Result(
     outgoing: Option[Message],
     emit: Option[Message]
@@ -42,13 +47,21 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
   implicit F: MonadError[F, Throwable]
 ) {
 
+
+  /**
+   * Input a [[ByteBuf]], decode and process buf with current state, then produce the next state and [[ChannelState.Result]]
+   */
   type Transition =
     Function[ByteBuf, StateT[F, ChannelContext[F], ChannelState.Result]]
 
+  /**
+   * Define the finite state matchine
+   */
   def transition: Transition = { buf =>
     StateT { ctx =>
       ctx.state match {
 
+        // Read the handshake init, if not receive it, then send server
         case ChannelState.Handshake.WaitHandshakeInit =>
           PacketDecoder[HandshakeInit]
             .decode(buf, Charset.defaultCharset())
@@ -60,12 +73,12 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
               nc.serverCharset.complete(init.charset).as(nc -> r)
             }
 
+        // Read auth result, emit it and make state [[ChannelState.ReadForCommand]]
         case ChannelState.Handshake.WaitAuthResult =>
           for {
             cs <- ctx.serverCharset.get
             m  <- PacketDecoder[OrErr[Ok]].decode(buf, cs).liftTo[F]
           } yield {
-            println(m)
             val nc = ctx.copy(
               state = ChannelState.ReadForCommand
             )

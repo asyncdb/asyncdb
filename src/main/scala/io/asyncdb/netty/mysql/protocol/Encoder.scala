@@ -93,6 +93,10 @@ object Encoder {
     }
   }
 
+  def noop[A]: Encoder[A] = new Encoder[A] {
+    def encode(a: A, buf: ByteBuf, charset: Charset) = {}
+  }
+
   val lenencInt: Encoder[Long] = new Encoder[Long] {
     def encode(v: Long, buf: ByteBuf, charset: Charset) = {
       if (v < 251) {
@@ -185,6 +189,6 @@ object PacketsEncoder {
         previous :+ p
       }
     }
-    splitPackets(0, 0, Vector.empty)
+    splitPackets(0, 1, Vector.empty)
   }
 }

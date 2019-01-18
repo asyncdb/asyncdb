@@ -14,10 +14,11 @@ import protocol.server._
 
 case class MySQLSocketConfig(
   bootstrap: Bootstrap,
-  database: String,
   username: String,
-  password: String,
-  charset: Short
+  password: Option[String],
+  database: Option[String],
+  charset: Short,
+  authMethod: Option[String]
 ) extends NettySocketConfig
 
 class MySQLSocket[F[_]](

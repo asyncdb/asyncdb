@@ -24,7 +24,7 @@ class FrameEncoder[F[_]](config: MySQLSocketConfig)
     msg: AnyRef,
     p: ChannelPromise
   ) = {
-    println(s"write $msg")
+
     val charset = CharsetMap.of(config.charset)
     val packets = msg match {
       case m: HandshakeResponse =>

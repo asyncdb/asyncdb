@@ -17,29 +17,29 @@ case class HandshakeResponse(
   charset: Short,
   filter: Array[Byte],
   username: String,
-  response: Array[Byte],
-  database: String,
-  authMethod: String,
-  attrs: Seq[(String, String)]
+  password: Array[Byte],
+  database: Option[String],
+  authMethod: Option[String]
 ) extends Message
 
 object HandshakeResponse {
 
   def apply(init: server.HandshakeInit, config: MySQLSocketConfig) = {
-
+    val cap = {
+      val base = Cap.baseCap
+      val withAuthPlugin = config.authMethod.fold(base)(_ => base + Cap.PluginAuth)
+      val withDatabase = config.database.fold(withAuthPlugin)(_ => base + Cap.ConnectWithDB)
+      withDatabase
+    }
+    val passBytes = config.password.fold(Array.empty[Byte])(p => Auth.nativePassword(init.authPluginData, p, CharsetMap.of(config.charset)))
     new HandshakeResponse(
-      clientFlag = Cap.baseCap.mask,
+      clientFlag = cap.mask,
       maxPacketSize = Packet.MaxSize,
       charset = config.charset,
       database = config.database,
       username = config.username,
-      response = Auth.nativePassword(
-        init.authPluginData,
-        config.password,
-        CharsetMap.of(config.charset)
-      ),
-      authMethod = init.authenticationMethod,
-      attrs = Seq.empty,
+      password = passBytes,
+      authMethod = config.authMethod,
       filter = Array.fill(23)(0.toByte)
     )
   }
@@ -48,17 +48,7 @@ object HandshakeResponse {
 
   implicit val handshakeResponseEncoder: Encoder[HandshakeResponse] =
     Encoder[HandshakeResponse] { data =>
-      val resp =
-        if (Cap(data.clientFlag).has(Cap.PluginAuthLenencData))
-          lenencBytes
-        else lenencBytes.productL(_.size.toLong, lenencInt)
-      val attrs =
-        (lenencText :: lenencText)
-        .contramap[(String, String)] {
-          case (k, v) => k :: v :: HNil
-        }.*.productL(l => l.size.toLong, lenencInt)
-      (intL4 :: intL4 :: uint1 :: bytes :: ntText :: resp :: ntText :: ntText :: attrs)
-        .as[HandshakeResponse]
+      (intL4 :: intL4 :: uint1 :: bytes :: ntText :: lenencBytes :: ntText.? :: ntText.?).as[HandshakeResponse]
     }
 
 }

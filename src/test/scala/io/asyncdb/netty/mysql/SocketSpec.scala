@@ -26,9 +26,10 @@ abstract class SocketSpec extends Spec {
     MySQLSocketConfig(
       bootstrap = b,
       charset = CharsetMap.Utf8_general_ci,
-      database = "test",
+      database = Some("test"),
       username = "root",
-      password = ""
+      password = None,
+      authMethod = None
     )
   }
 
