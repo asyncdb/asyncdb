@@ -1,3 +1,3 @@
-CREATE DATABASE asyncdb_test;
-CREATE USER asyncdb_test_user@'localhost' identified BY 'asyncdb_test_user_pass';
-GRANT ALL on asyncdb_test.* to asyncdb_test_user@'localhost';
+CREATE DATABASE asyncdb;
+CREATE USER asyncdb@'localhost' identified BY 'asyncdb';
+GRANT ALL on asyncdb.* to asyncdb@'localhost';
