@@ -104,7 +104,6 @@ object Decoder {
       case 0XFE => intL8.decode(buf, cs)
       case v    => v.toLong
     }
-
   }
 
   val ntBytes = decoderOf { buf: ByteBuf =>
@@ -152,11 +151,11 @@ private[mysql] final class PacketDecoder[V](md: Decoder[V]) {
     val packetLen = buf.getUnsignedMediumLE(from)
     val dataStart = from + 4
     val dataEnd   = dataStart + packetLen
-    val thisAdded = composite :+ buf.slice(dataStart, dataEnd)
+    val thisAdded = composite :+ buf.slice(dataStart, packetLen)
     if (packetLen >= Packet.MaxSize) {
       payloadBufs(buf, dataEnd, thisAdded)
     } else {
-      // data will be consumed in slice(dataStart, dataEnd), just mark the reader index here
+      // data will be consumed in slice(dataStart, packetLen), just mark the reader index here
       buf.readerIndex(dataEnd)
       thisAdded
     }

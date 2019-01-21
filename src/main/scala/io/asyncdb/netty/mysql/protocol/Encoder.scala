@@ -100,14 +100,18 @@ object Encoder {
   val lenencInt: Encoder[Long] = new Encoder[Long] {
     def encode(v: Long, buf: ByteBuf, charset: Charset) = {
       if (v < 251) {
+        buf.ensureWritable(1)
         buf.writeByte(v.toByte)
       } else if (v < 0x100000) {
+        buf.ensureWritable(2)
         buf.writeByte(0xFC)
         intL2.encode(v.toInt, buf, charset)
       } else if (v < 0x1000000) {
+        buf.ensureWritable(3)
         buf.writeByte(0xFD)
         intL3.encode(v.toInt, buf, charset)
       } else {
+        buf.ensureWritable(8)
         buf.writeByte(0xFE)
         intL8.encode(v, buf, charset)
       }
@@ -147,9 +151,10 @@ object Encoder {
 
   val ntText: Encoder[String] = new Encoder[String] {
     def encode(v: String, buf: ByteBuf, charset: Charset) = {
-      val bytes = (v + "\u0000").getBytes(charset.name())
-      buf.ensureWritable(bytes.size)
+      val bytes = v.getBytes(charset)
+      buf.ensureWritable(bytes.size + 1)
       buf.writeBytes(bytes)
+      buf.writeByte(0x00)
     }
   }
 
@@ -181,11 +186,11 @@ object PacketsEncoder {
     ): Vector[ByteBuf] = {
       if (fullLength - from >= Packet.MaxSize) {
         val len = Packet.MaxSize
-        val p   = packet(seq, len, buf.slice(from, from + len))
+        val p   = packet(seq, len, buf.slice(from, len))
         splitPackets(from + len, seq + 1, previous :+ p)
       } else {
         val len = fullLength - from
-        val p   = packet(seq, len, buf.slice(from, fullLength))
+        val p   = packet(seq, len, buf.slice(from, len))
         previous :+ p
       }
     }

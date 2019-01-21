@@ -4,5 +4,7 @@ jdk:
 services:
   - mysql
 sudo: required
+before_script:
+  - ./.travis/setup.sh
 script:
   - sbt +test

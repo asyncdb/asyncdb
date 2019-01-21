@@ -13,9 +13,10 @@ import scala.language.implicitConversions
 abstract class SocketSpec extends Spec {
 
   implicit val contextShift                = IO.contextShift(ExecutionContext.global)
+
   implicit def effectAsFuture[A](f: IO[A]) = f.unsafeToFuture
 
-  val config = {
+  protected val config = {
     val host: String = "127.0.0.1"
     val port: Int    = 3306
     val address      = new InetSocketAddress(host, port)
@@ -26,18 +27,17 @@ abstract class SocketSpec extends Spec {
     MySQLSocketConfig(
       bootstrap = b,
       charset = CharsetMap.Utf8_general_ci,
-      database = Some("test"),
-      username = "root",
-      password = None,
+      database = Some("asyncdb"),
+      username = "asyncdb",
+      password = Some("asyncdb"),
       authMethod = None
     )
   }
 
-  def withSocket[A](f: MySQLSocket[IO] => IO[A]): IO[A] = {
-
-    Resource
-      .make(MySQLSocket[IO](config).flatMap(_.connect))(_.disconnect)
-      .use(f)
+  protected def withSocket[A](cfg: MySQLSocketConfig)(f: MySQLSocket[IO] => IO[A]): IO[A] = {
+    Resource.make(MySQLSocket[IO](cfg).flatMap(_.connect))(_.disconnect).use(f)
   }
+
+  protected def withSocket[A](f: MySQLSocket[IO] => IO[A]): IO[A] = withSocket[A](config)(f)
 
 }

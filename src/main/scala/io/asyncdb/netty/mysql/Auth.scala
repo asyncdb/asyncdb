@@ -4,6 +4,7 @@ package mysql
 
 import java.security.MessageDigest
 import java.nio.charset.Charset
+import io.netty.buffer._
 
 object Auth {
 

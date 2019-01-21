@@ -25,7 +25,7 @@ case class ExtraHandshakeData(
   characterSet: Short,
   statusFlags: Int,
   capabilityFlagUpper: Int,
-  authPluginDataLen: Byte,
+  authPluginDataLen: Short,
   reserved: Array[Byte],
   authPluginDataPart2: Array[Byte],
   authenticationMethod: Array[Byte]
@@ -44,15 +44,16 @@ object HandshakeInit {
 
   private def apply(b: BasicHandshakeData, e: ExtraHandshakeData) = {
     val c = CharsetMap.of(e.characterSet)
-    new HandshakeInit(
+    val r = new HandshakeInit(
       protocol = b.protocol,
       version = new String(b.version, c),
       connectionId = b.connectionId,
-      authPluginData = b.authPluginDataPart1 ++ e.authPluginDataPart2,
+      authPluginData = Array.concat(b.authPluginDataPart1,e.authPluginDataPart2),
       charset = c,
       cap = b.capabilityFlagLower & e.capabilityFlagUpper,
       authenticationMethod = new String(e.authenticationMethod, c)
     )
+    r
   }
 
   import Decoder._
@@ -60,9 +61,13 @@ object HandshakeInit {
   implicit val handshakeInitDecoder: Decoder[HandshakeInit] = {
     val basic = (int1 :: ntBytes :: intL4 :: bytes(8) :: int1 :: intL2)
       .as[BasicHandshakeData]
-    val extra = (uint1 :: intL2 :: intL2 :: int1.flatMap { pdl =>
+    val extra = (uint1 :: intL2 :: intL2 :: uint1.flatMap { pdl =>
       val apd2Len = math.max(13, pdl - 8)
-      Decoder.pure(pdl) :: bytes(10) :: bytes(apd2Len) :: ntBytes
+      val apd2 = if(apd2Len > 0) {
+        // Mysql documentation says [[authPluginDataPart2]] was length-encoded string, but actually is null terminated string
+        ntBytes
+      } else Decoder.pure(Array.empty[Byte])
+      Decoder.pure(pdl) :: bytes(10) :: apd2 :: ntBytes
     }).as[ExtraHandshakeData]
     for {
       b <- basic
