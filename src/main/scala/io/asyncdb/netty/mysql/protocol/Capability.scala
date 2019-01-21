@@ -59,6 +59,7 @@ object Cap {
     Cap.Interactive,
     Cap.LongPassword,
     Cap.SecureConnection,
+    Cap.PluginAuth,
     Cap.LocalFiles
   )
 

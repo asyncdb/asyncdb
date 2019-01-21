@@ -104,7 +104,6 @@ object Decoder {
       case 0XFE => intL8.decode(buf, cs)
       case v    => v.toLong
     }
-
   }
 
   val ntBytes = decoderOf { buf: ByteBuf =>

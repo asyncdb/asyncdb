@@ -19,7 +19,7 @@ case class HandshakeResponse(
   username: String,
   password: Array[Byte],
   database: Option[String],
-  authMethod: Option[String]
+  authMethod: String
 ) extends Message
 
 object HandshakeResponse {
@@ -27,8 +27,7 @@ object HandshakeResponse {
   def apply(init: server.HandshakeInit, config: MySQLSocketConfig) = {
     val cap = {
       val base = Cap.baseCap
-      val withAuthPlugin = config.authMethod.fold(base)(_ => base + Cap.PluginAuth)
-      val withDatabase = config.database.fold(withAuthPlugin)(_ => base + Cap.ConnectWithDB)
+      val withDatabase = config.database.fold(base)(_ => base + Cap.ConnectWithDB)
       withDatabase
     }
     val passBytes = config.password.fold(Array.empty[Byte])(p => Auth.nativePassword(init.authPluginData, p, CharsetMap.of(config.charset)))
@@ -39,7 +38,7 @@ object HandshakeResponse {
       database = config.database,
       username = config.username,
       password = passBytes,
-      authMethod = config.authMethod,
+      authMethod = config.authMethod.getOrElse(init.authenticationMethod),
       filter = Array.fill(23)(0.toByte)
     )
   }
@@ -48,7 +47,7 @@ object HandshakeResponse {
 
   implicit val handshakeResponseEncoder: Encoder[HandshakeResponse] =
     Encoder[HandshakeResponse] { data =>
-      (intL4 :: intL4 :: uint1 :: bytes :: ntText :: lenencBytes :: ntText.? :: ntText.?).as[HandshakeResponse]
+      (intL4 :: intL4 :: uint1 :: bytes :: ntText :: lenencBytes :: ntText.? :: ntText).as[HandshakeResponse]
     }
 
 }
