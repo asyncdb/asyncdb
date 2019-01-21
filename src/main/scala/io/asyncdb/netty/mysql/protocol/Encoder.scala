@@ -181,11 +181,11 @@ object PacketsEncoder {
     ): Vector[ByteBuf] = {
       if (fullLength - from >= Packet.MaxSize) {
         val len = Packet.MaxSize
-        val p   = packet(seq, len, buf.slice(from, from + len))
+        val p   = packet(seq, len, buf.slice(from, len))
         splitPackets(from + len, seq + 1, previous :+ p)
       } else {
         val len = fullLength - from
-        val p   = packet(seq, len, buf.slice(from, fullLength))
+        val p   = packet(seq, len, buf.slice(from, len))
         previous :+ p
       }
     }

@@ -52,7 +52,6 @@ object Cap {
    * capability.
    */
   val baseCap = Cap(
-    Cap.PluginAuth,
     Cap.LongFlag,
     Cap.Transactions,
     Cap.Protocol41,
