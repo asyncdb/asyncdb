@@ -27,9 +27,9 @@ abstract class SocketSpec extends Spec {
     MySQLSocketConfig(
       bootstrap = b,
       charset = CharsetMap.Utf8_general_ci,
-      database = Some("asyncdb_test"),
-      username = "asyncdb_test_user",
-      password = Some("asyncdb_test_user_pass"),
+      database = Some("asyncdb"),
+      username = "asyncdb",
+      password = Some("asyncdb"),
       authMethod = None
     )
   }
