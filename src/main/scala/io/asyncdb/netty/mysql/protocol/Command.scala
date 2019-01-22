@@ -1,4 +1,6 @@
-package io.asyncdb.netty.mysql.protocol
+package io.asyncdb
+package netty
+package mysql
 
 object Command {
 

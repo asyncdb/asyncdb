@@ -7,16 +7,12 @@ import cats.effect.concurrent._
 import cats.effect.syntax.all._
 import cats.instances.option._
 import cats.syntax.all._
-import io.asyncdb.netty.mysql.protocol.server._
 import io.netty.buffer._
 import io.netty.channel._
 import io.netty.handler.codec._
 import io.netty.util.AttributeKey
-import java.nio.charset.Charset
 
-import io.asyncdb.netty.mysql.protocol.Command
 import protocol.client._
-import protocol.server._
 
 class FrameEncoder[F[_]](config: MySQLSocketConfig)
     extends ChannelOutboundHandlerAdapter {

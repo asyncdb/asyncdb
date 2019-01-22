@@ -2,14 +2,12 @@ package io.asyncdb
 package netty
 package mysql
 
-import cats._
 import cats.syntax.all._
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import java.nio.charset.Charset
 import scala.annotation._
 import scala.collection.mutable.ArrayBuffer
-import protocol.server.Err
 
 /**
  * Internal api, not fully safe, should carefully dealed at call site.

@@ -5,11 +5,9 @@ package mysql
 import cats.syntax.all._
 import cats.effect._
 import cats.effect.concurrent._
-import cats.data.NonEmptyList
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.{Channel, ChannelInitializer}
 import java.nio.charset.Charset
-import protocol.client._
 import protocol.server._
 
 case class MySQLSocketConfig(
