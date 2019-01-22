@@ -47,7 +47,6 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
   implicit F: MonadError[F, Throwable]
 ) {
 
-
   /**
    * Input a [[ByteBuf]], decode and process buf with current state, then produce the next state and [[ChannelState.Result]]
    */

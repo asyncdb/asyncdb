@@ -17,6 +17,8 @@ package object protocol {
           encoder.encode(av, buf, charset)
         }
       }
+    def as[B](implicit gen: Generic.Aux[B, A :: HNil]): Encoder[B] =
+      encoder.contramap(l => gen.to(l).head)
   }
 
   implicit class HListEncoderOps[L <: HList](val encoder: Encoder[L])
@@ -40,6 +42,7 @@ package object protocol {
           h :: t :: HNil
         }
       }
+
   }
 
   implicit class HListDecoderOps[L <: HList](val decoder: Decoder[L])

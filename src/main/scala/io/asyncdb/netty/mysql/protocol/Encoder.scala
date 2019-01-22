@@ -13,7 +13,10 @@ trait Encoder[A] {
   def productL[B](f: A => B, e: Encoder[B]): Encoder[A] = {
     val ae = this
     new Encoder[A] {
-      def encode(a: A, buf: ByteBuf, charset: Charset) = {}
+      def encode(a: A, buf: ByteBuf, charset: Charset) = {
+        e.encode(f(a), buf, charset)
+        ae.encode(a, buf, charset)
+      }
     }
   }
 
@@ -172,11 +175,18 @@ object PacketsEncoder {
     Unpooled.wrappedBuffer(headerBuf, payload)
   }
 
-  def encode[V](v: V, buf: ByteBuf, charset: Charset)(
+  def encode[V](
+    v: V,
+    buf: ByteBuf,
+    charset: Charset
+  )(
     implicit ve: Encoder[V]
   ) = {
     val fullBuf    = ve.encode(v, buf, charset)
     val fullLength = buf.readableBytes()
+
+    println("---------")
+    println(HexDump.dump(buf))
 
     @scala.annotation.tailrec
     def splitPackets(

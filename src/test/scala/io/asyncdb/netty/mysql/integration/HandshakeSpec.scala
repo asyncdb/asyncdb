@@ -8,10 +8,11 @@ import io.asyncdb.netty.mysql.protocol.server._
 
 class HandshakeSpec extends SocketSpec {
 
-  val NoPass = config.copy(username = "root", password = None)
+  val NoPass          = config.copy(username = "root", password = None)
   val InvalidDatabase = config.copy(database = Some("invalid_database"))
-  val InvalidUser = config.copy(username = "invalid_user")
-  val InvalidPass = config.copy(username = "asyncdb_test_user", password = Some("asyncdb"))
+  val InvalidUser     = config.copy(username = "invalid_user")
+  val InvalidPass =
+    config.copy(username = "asyncdb_test_user", password = Some("asyncdb"))
 
   "MySQLSocket" - {
     "handshake" - {

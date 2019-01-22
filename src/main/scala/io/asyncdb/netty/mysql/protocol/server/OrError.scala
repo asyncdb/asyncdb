@@ -15,7 +15,7 @@ object OrErr {
   ): Decoder[OrErr[R]] = new Decoder[OrErr[R]] {
     def decode(buf: ByteBuf, charset: Charset) = {
       val head = buf.getByte(buf.readerIndex())
-      if (head.toByte == -1) {
+      if (head.toByte == Command.Server.ERR) {
         OrErr(Left(Err.errDecoder.decode(buf, charset)))
       } else {
         OrErr(Right(ad.decode(buf, charset)))

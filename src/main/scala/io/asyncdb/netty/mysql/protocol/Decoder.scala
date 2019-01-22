@@ -4,7 +4,7 @@ package mysql
 
 import cats._
 import cats.syntax.all._
-import io.netty.buffer.{ByteBuf, ByteBufUtil}
+import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import java.nio.charset.Charset
 import scala.annotation._

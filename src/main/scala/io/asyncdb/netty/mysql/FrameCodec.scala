@@ -13,6 +13,8 @@ import io.netty.channel._
 import io.netty.handler.codec._
 import io.netty.util.AttributeKey
 import java.nio.charset.Charset
+
+import io.asyncdb.netty.mysql.protocol.Command
 import protocol.client._
 import protocol.server._
 
@@ -30,7 +32,17 @@ class FrameEncoder[F[_]](config: MySQLSocketConfig)
       case m: HandshakeResponse =>
         val buf = ctx.alloc().buffer(1024)
         PacketsEncoder.encode(m, buf, charset)
+      case m: Query =>
+        val buf = ctx
+          .alloc()
+          .buffer(
+            Packet.PacketLength + Packet.CommandLength + m.query
+              .getBytes(charset)
+              .size
+          )
+        PacketsEncoder.encode(m, buf, charset)
     }
+    println(s"the packets is ${HexDump.dump(packets(0))}")
     val wrapped = Unpooled.wrappedBuffer(packets: _*)
     ctx.write(wrapped, p)
     ctx.flush()

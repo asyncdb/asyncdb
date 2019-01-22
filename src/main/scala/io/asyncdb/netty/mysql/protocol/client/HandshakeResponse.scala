@@ -4,8 +4,6 @@ package mysql
 package protocol
 package client
 
-import io.netty.buffer.ByteBuf
-import java.nio.charset.Charset
 import shapeless._
 
 /**
@@ -27,10 +25,15 @@ object HandshakeResponse {
   def apply(init: server.HandshakeInit, config: MySQLSocketConfig) = {
     val cap = {
       val base = Cap.baseCap
-      val withDatabase = config.database.fold(base)(_ => base + Cap.ConnectWithDB)
+      val withDatabase =
+        config.database.fold(base)(_ => base + Cap.ConnectWithDB)
       withDatabase
     }
-    val passBytes = config.password.fold(Array.empty[Byte])(p => Auth.nativePassword(init.authPluginData, p, CharsetMap.of(config.charset)))
+    val passBytes = config.password.fold(Array.empty[Byte])(
+      p =>
+        Auth
+          .nativePassword(init.authPluginData, p, CharsetMap.of(config.charset))
+    )
     new HandshakeResponse(
       clientFlag = cap.mask,
       maxPacketSize = Packet.MaxSize,
@@ -47,7 +50,8 @@ object HandshakeResponse {
 
   implicit val handshakeResponseEncoder: Encoder[HandshakeResponse] =
     Encoder[HandshakeResponse] { data =>
-      (intL4 :: intL4 :: uint1 :: bytes :: ntText :: lenencBytes :: ntText.? :: ntText).as[HandshakeResponse]
+      (intL4 :: intL4 :: uint1 :: bytes :: ntText :: lenencBytes :: ntText.? :: ntText)
+        .as[HandshakeResponse]
     }
 
 }

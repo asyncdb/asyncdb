@@ -12,7 +12,7 @@ import scala.language.implicitConversions
 
 abstract class SocketSpec extends Spec {
 
-  implicit val contextShift                = IO.contextShift(ExecutionContext.global)
+  implicit val contextShift = IO.contextShift(ExecutionContext.global)
 
   implicit def effectAsFuture[A](f: IO[A]) = f.unsafeToFuture
 
@@ -34,10 +34,13 @@ abstract class SocketSpec extends Spec {
     )
   }
 
-  protected def withSocket[A](cfg: MySQLSocketConfig)(f: MySQLSocket[IO] => IO[A]): IO[A] = {
+  protected def withSocket[A](
+    cfg: MySQLSocketConfig
+  )(f: MySQLSocket[IO] => IO[A]): IO[A] = {
     Resource.make(MySQLSocket[IO](cfg).flatMap(_.connect))(_.disconnect).use(f)
   }
 
-  protected def withSocket[A](f: MySQLSocket[IO] => IO[A]): IO[A] = withSocket[A](config)(f)
+  protected def withSocket[A](f: MySQLSocket[IO] => IO[A]): IO[A] =
+    withSocket[A](config)(f)
 
 }

@@ -48,7 +48,8 @@ object HandshakeInit {
       protocol = b.protocol,
       version = new String(b.version, c),
       connectionId = b.connectionId,
-      authPluginData = Array.concat(b.authPluginDataPart1,e.authPluginDataPart2),
+      authPluginData =
+        Array.concat(b.authPluginDataPart1, e.authPluginDataPart2),
       charset = c,
       cap = b.capabilityFlagLower & e.capabilityFlagUpper,
       authenticationMethod = new String(e.authenticationMethod, c)
@@ -63,7 +64,7 @@ object HandshakeInit {
       .as[BasicHandshakeData]
     val extra = (uint1 :: intL2 :: intL2 :: uint1.flatMap { pdl =>
       val apd2Len = math.max(13, pdl - 8)
-      val apd2 = if(apd2Len > 0) {
+      val apd2 = if (apd2Len > 0) {
         // Mysql documentation says [[authPluginDataPart2]] was length-encoded string, but actually is null terminated string
         ntBytes
       } else Decoder.pure(Array.empty[Byte])

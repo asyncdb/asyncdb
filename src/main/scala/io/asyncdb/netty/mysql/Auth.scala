@@ -13,7 +13,7 @@ object Auth {
     password: String,
     charset: Charset
   ): Array[Byte] = {
-    val md = MessageDigest.getInstance("SHA-1")
+    val md    = MessageDigest.getInstance("SHA-1")
     val hash1 = md.digest(password.getBytes(charset))
     md.reset()
     val hash2 = md.digest(hash1)
