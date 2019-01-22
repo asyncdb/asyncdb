@@ -31,7 +31,7 @@ class FrameEncoder[F[_]](config: MySQLSocketConfig)
     val packets = msg match {
       case m: HandshakeResponse =>
         val buf = ctx.alloc().buffer(1024)
-        PacketsEncoder.encode(m, buf, charset)
+        PacketsEncoder.encode(m, buf, charset, 1)
       case m: Query =>
         val buf = ctx
           .alloc()
@@ -42,7 +42,6 @@ class FrameEncoder[F[_]](config: MySQLSocketConfig)
           )
         PacketsEncoder.encode(m, buf, charset)
     }
-    println(s"the packets is ${HexDump.dump(packets(0))}")
     val wrapped = Unpooled.wrappedBuffer(packets: _*)
     ctx.write(wrapped, p)
     ctx.flush()

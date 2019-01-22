@@ -178,16 +178,13 @@ object PacketsEncoder {
   def encode[V](
     v: V,
     buf: ByteBuf,
-    charset: Charset
+    charset: Charset,
+    initSeq: Int = 0
   )(
     implicit ve: Encoder[V]
   ) = {
     val fullBuf    = ve.encode(v, buf, charset)
     val fullLength = buf.readableBytes()
-
-    println("---------")
-    println(HexDump.dump(buf))
-
     @scala.annotation.tailrec
     def splitPackets(
       from: Int,
@@ -204,6 +201,6 @@ object PacketsEncoder {
         previous :+ p
       }
     }
-    splitPackets(0, 1, Vector.empty)
+    splitPackets(0, initSeq, Vector.empty)
   }
 }
