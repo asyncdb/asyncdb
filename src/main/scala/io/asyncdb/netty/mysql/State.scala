@@ -85,6 +85,15 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
             val emit     = Some(m)
             (nc, ChannelState.Result(outgoing, emit))
           }
+        case ChannelState.ReadForCommand =>
+          for {
+            cs <- ctx.serverCharset.get
+            m  <- PacketDecoder[OrErr[Ok]].decode(buf, cs).liftTo[F]
+          } yield {
+            val outgoing = None
+            val emit     = Some(m)
+            (ctx, ChannelState.Result(outgoing, emit))
+          }
       }
 
     }
