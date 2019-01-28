@@ -25,6 +25,7 @@ object ChannelState {
   }
 
   object ReadForCommand extends ChannelState
+  object Query          extends ChannelState
 
   /**
    * Result produced by a state transition.
