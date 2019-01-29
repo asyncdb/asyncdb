@@ -14,6 +14,7 @@ import scala.collection.mutable.ArrayBuffer
  * The buffer passed to this decoder is raw data buffer, mysql seq and len head is striped
  */
 private[mysql] trait Decoder[V] {
+
   def decode(b: ByteBuf, charset: Charset): V
 
   def map[B](f: (V, Charset) => B): Decoder[B] = {

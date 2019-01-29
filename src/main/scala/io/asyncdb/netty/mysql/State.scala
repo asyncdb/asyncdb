@@ -65,7 +65,7 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
    * Input a [[ByteBuf]], decode and process buf with current state, then produce the next state and [[ChannelState.Result]]
    */
   type ReceiveTransition =
-    Function[ByteBuf, StateT[F, ChannelContext, ChannelState.Result]]
+    Function[ServerMessage, State[ChannelContext, ChannelState.Result]]
 
   type SendTransition = Function2[Message, ByteBuf, State[ChannelContext, Vector[ByteBuf]]]
 
@@ -90,28 +90,23 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
   /**
    * Define the finite state matchine for receiving message
    */
-  def receive: ReceiveTransition = { buf =>
-    def decode[A: Decoder](buf: ByteBuf, cs: Charset): F[A] = {
-      Packet.decode[A](buf, cs).liftTo[F]
-    }
-    StateT {
-      case ChannelContext.WaitInit =>
-        decode[HandshakeInit](buf, Charset.defaultCharset()).map { init =>
-          val out = HandshakeResponse(init, config)
+  def receive: ReceiveTransition = { msg =>
+    State { state =>
+      (state, msg) match {
+        case (ChannelContext.WaitInit, m: HandshakeInit) =>
+          val out = HandshakeResponse(m, config)
           val r   = ChannelState.Result(Some(out), None)
-          val nc  = ChannelContext.Inited(init.charset, ChannelState.Handshake.WaitAuthResult)
+          val nc  = ChannelContext.Inited(m.charset, ChannelState.Handshake.WaitAuthResult)
           nc -> r
-        }
-      case ctx@ChannelContext.Inited(cs, ChannelState.Handshake.WaitAuthResult) =>
-        decode[OrErr[Ok]](buf, cs).map { m =>
-          println(s"Receiving $m")
+        case (ctx@ChannelContext.Inited(cs, ChannelState.Handshake.WaitAuthResult), m @ (_: Ok | _: Err)) =>
           val nc = ctx.copy(
             state = ChannelState.ReadyForCommand
           )
           val outgoing = None
           val emit     = Some(m)
           (nc, ChannelState.Result(outgoing, emit))
-        }
+
+      }
     }
   }
 }

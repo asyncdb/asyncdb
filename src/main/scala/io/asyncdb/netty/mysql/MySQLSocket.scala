@@ -39,8 +39,8 @@ class MySQLSocket[F[_]](
   }
 
   def read = ref.take.flatMap {
-    case OrErr(value) =>
-      F.fromEither(value)
+    case e: Err =>
+      F.raiseError(e)
     case v => F.pure(v)
   }
 }

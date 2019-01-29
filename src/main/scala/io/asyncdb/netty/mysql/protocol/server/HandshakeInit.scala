@@ -19,7 +19,7 @@ case class HandshakeInit(
   charset: Charset,
   cap: Int,
   authenticationMethod: String
-) extends Message
+) extends ServerMessage
 
 case class ExtraHandshakeData(
   characterSet: Short,

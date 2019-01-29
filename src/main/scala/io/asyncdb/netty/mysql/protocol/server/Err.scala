@@ -11,7 +11,7 @@ case class Err(
   sqlState: String,
   errorMessage: String
 ) extends Exception
-    with Message {
+    with ServerMessage {
   override def getMessage =
     s"Err(header: ${header}, code:${errcode}, marker: ${sqlStateMarker}, state:${sqlState},errorMessage: ${errorMessage})"
 }

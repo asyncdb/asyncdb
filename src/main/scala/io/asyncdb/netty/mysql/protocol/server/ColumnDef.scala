@@ -12,4 +12,4 @@ case class ColumnDef(
   val columnType: Int,
   val flags: Short,
   val decimals: Byte
-)
+) extends ServerMessage

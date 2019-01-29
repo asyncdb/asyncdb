@@ -11,8 +11,9 @@ import io.netty.buffer._
 import io.netty.channel._
 import io.netty.handler.codec._
 import io.netty.util.AttributeKey
-
+import java.nio.charset.Charset
 import protocol.client._
+import protocol.server._
 
 class FrameEncoder[F[_]: ConcurrentEffect](
   config: MySQLSocketConfig,
@@ -59,18 +60,24 @@ class FrameDecoder[F[_]](
     out: java.util.List[AnyRef]
   ) = {
     if (PacketDecoder.isReady(in)) {
-      ctxRef.access.flatMap {
-        case (old, updateF) =>
-          FSM.receive(in).run(old).flatMap {
-            case (nc, ChannelState.Result(o, e)) =>
-              val fireOutgoing = o.traverse { om =>
-                F.delay {
-                  ctx.channel().write(om)
-                }
+      val msg = ctxRef.get.flatMap {
+        case ChannelContext.WaitInit =>
+          F.fromEither(Packet.decode[ServerMessage](in, Charset.defaultCharset()))
+        case ChannelContext.Inited(cs, _) =>
+          F.fromEither(Packet.decode[ServerMessage](in, cs))
+      }
+
+      msg.flatMap { m =>
+        ctxRef.modifyState(FSM.receive(m)).flatMap {
+          case ChannelState.Result(o, e) =>
+            val fireOutgoing = o.traverse { om =>
+              F.delay {
+                ctx.channel().write(om)
               }
-              val enqueueEmit = e.traverse(msgRef.put)
-              updateF(nc) *> fireOutgoing *> enqueueEmit
-          }
+            }
+            val enqueueEmit = e.traverse(msgRef.put)
+            fireOutgoing *> enqueueEmit
+        }
       }.toIO.unsafeRunSync()
     }
   }

@@ -18,7 +18,7 @@ case class HandshakeResponse(
   password: Array[Byte],
   database: Option[String],
   authMethod: String
-) extends Message
+) extends ClientMessage
 
 object HandshakeResponse {
 

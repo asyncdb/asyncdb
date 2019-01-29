@@ -11,7 +11,7 @@ case class Ok(
   statusFlag: Int,
   warnings: Int,
   info: String
-) extends Message
+) extends ServerMessage
 
 object Ok {
   import Decoder._
