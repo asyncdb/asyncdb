@@ -163,7 +163,7 @@ object Encoder {
 
 }
 
-object PacketsEncoder {
+object PacketEncoder {
 
   @inline private def packet(seq: Int, len: Int, payload: ByteBuf) = {
     val headByts  = Array.ofDim[Byte](4)
@@ -179,7 +179,7 @@ object PacketsEncoder {
     v: V,
     buf: ByteBuf,
     charset: Charset,
-    initSeq: Int = 0
+    initSeq: Int
   )(
     implicit ve: Encoder[V]
   ) = {

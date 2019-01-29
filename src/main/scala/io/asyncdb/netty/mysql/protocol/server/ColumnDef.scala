@@ -1,6 +1,6 @@
 package io.asyncdb.netty.mysql.protocol.server
 
-case class ColumnDefinition(
+case class ColumnDef(
   val catalog: String,
   val schema: String,
   val table: String,

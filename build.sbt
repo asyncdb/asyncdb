@@ -12,6 +12,8 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest"      % "3.0.5" % Test
 )
 
+addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0-M4")
+
 scalacOptions ++= Seq(
   "-language:higherKinds",
   "-feature",

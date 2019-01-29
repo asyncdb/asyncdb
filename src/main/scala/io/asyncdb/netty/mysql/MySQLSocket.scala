@@ -50,13 +50,10 @@ object MySQLSocket {
     for {
       msgRef   <- MVar[F].empty[Message]
       clientCS <- Deferred[F, Charset]
-      initCtx = ChannelContext(
-        ChannelState.Handshake.WaitHandshakeInit,
-        clientCS
-      )
+      initCtx: ChannelContext = ChannelContext.WaitInit
       ctxRef <- Ref[F].of(initCtx)
       decoder = new FrameDecoder[F](config, ctxRef, msgRef)
-      encoder = new FrameEncoder(config)
+      encoder = new FrameEncoder(config, ctxRef)
       initHandler = new ChannelInitializer[Channel] {
         override def initChannel(channel: Channel): Unit = {
           channel

@@ -14,8 +14,12 @@ import io.netty.util.AttributeKey
 
 import protocol.client._
 
-class FrameEncoder[F[_]](config: MySQLSocketConfig)
+class FrameEncoder[F[_]: ConcurrentEffect](
+  config: MySQLSocketConfig,
+  ctxRef: Ref[F, ChannelContext])
     extends ChannelOutboundHandlerAdapter {
+
+  private val FSM = new StateMachine[F](config)
 
   override def write(
     ctx: ChannelHandlerContext,
@@ -23,30 +27,23 @@ class FrameEncoder[F[_]](config: MySQLSocketConfig)
     p: ChannelPromise
   ) = {
 
-    val charset = CharsetMap.of(config.charset)
-    val packets = msg match {
-      case m: HandshakeResponse =>
-        val buf = ctx.alloc().buffer(1024)
-        PacketsEncoder.encode(m, buf, charset, 1)
-      case m: Query =>
-        val buf = ctx
-          .alloc()
-          .buffer(
-            Packet.PacketLength + Packet.CommandLength + m.query
-              .getBytes(charset)
-              .size
-          )
-        PacketsEncoder.encode(m, buf, charset)
+    def sendPackets(packets: Vector[ByteBuf]) = {
+      val wrapped = Unpooled.wrappedBuffer(packets: _*)
+      ctx.write(wrapped, p)
+      ctx.flush()
     }
-    val wrapped = Unpooled.wrappedBuffer(packets: _*)
-    ctx.write(wrapped, p)
-    ctx.flush()
+    val buf = ctx.alloc().buffer(1024)
+    val charset = CharsetMap.of(config.charset)
+    msg match {
+      case m: Message =>
+        ctxRef.modifyState(FSM.send(m, buf)).map(sendPackets).toIO.unsafeRunSync()
+    }
   }
 }
 
 class FrameDecoder[F[_]](
   config: MySQLSocketConfig,
-  ctxRef: Ref[F, ChannelContext[F]],
+  ctxRef: Ref[F, ChannelContext],
   msgRef: MsgRef[F]
 )(implicit F: ConcurrentEffect[F])
     extends ByteToMessageDecoder {
@@ -64,17 +61,15 @@ class FrameDecoder[F[_]](
     if (PacketDecoder.isReady(in)) {
       ctxRef.access.flatMap {
         case (old, updateF) =>
-          FSM.transition(in).run(old).flatMap {
+          FSM.receive(in).run(old).flatMap {
             case (nc, ChannelState.Result(o, e)) =>
               val fireOutgoing = o.traverse { om =>
                 F.delay {
                   ctx.channel().write(om)
                 }
               }
-              val enqueueEmit = e.traverse { em =>
-                msgRef.put(em)
-              }
-              fireOutgoing *> enqueueEmit *> updateF(nc)
+              val enqueueEmit = e.traverse(msgRef.put)
+              updateF(nc) *> fireOutgoing *> enqueueEmit
           }
       }.toIO.unsafeRunSync()
     }
