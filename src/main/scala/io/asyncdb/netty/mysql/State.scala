@@ -69,7 +69,7 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
 
   type SendTransition = Function2[Message, ByteBuf, State[ChannelContext, Vector[ByteBuf]]]
 
-  def send: SendTransition = { (msg, buf) =>
+  val send: SendTransition = { (msg, buf) =>
     val cs = CharsetMap.of(config.charset)
     State {
       case ctx:ChannelContext.Inited =>
@@ -90,7 +90,7 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
   /**
    * Define the finite state matchine for receiving message
    */
-  def receive: ReceiveTransition = { msg =>
+  val receive: ReceiveTransition = { msg =>
     State { state =>
       (state, msg) match {
         case (ChannelContext.WaitInit, m: HandshakeInit) =>
