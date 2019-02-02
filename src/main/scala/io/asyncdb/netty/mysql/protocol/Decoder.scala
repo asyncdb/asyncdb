@@ -105,6 +105,12 @@ object Decoder {
     }
   }
 
+  // length decode string
+  val strLen: Decoder[String] =
+    lenencInt.flatMap { l =>
+      str(l.toInt)
+    }
+
   val ntBytes = decoderOf { buf: ByteBuf =>
     def readUntilZero(read: ArrayBuffer[Byte]): ArrayBuffer[Byte] = {
       val b = buf.readByte()

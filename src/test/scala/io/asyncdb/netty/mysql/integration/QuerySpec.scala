@@ -22,70 +22,70 @@ class QuerySpec extends SocketSpec {
   val selectUserSuccess  = Query(selectUserSql)
 
   "MySQLSocket" - {
-    "create" - {
-      "create table success" in withSocket { socket =>
-        socket
-          .write(createTableSuccess)
-          .flatMap(
-            _ =>
-              socket.read.map { r =>
-                r match {
-                  case ok: Ok =>
-                    succeed
-                  case _ =>
-                    fail
-                }
-              }
-          )
-      }
-      "create table fail" in withSocket { socket =>
-        socket
-          .write(createTableFail)
-          .flatMap(
-            _ =>
-              socket.read.attempt.map { r =>
-                r match {
-                  case Left(e: Err) =>
-                    e.errcode shouldEqual 1050
-                  case _ =>
-                    fail
-                }
-              }
-          )
-      }
+    "query" - {
+//      "create table success" in withSocket { socket =>
+//        socket
+//          .write(createTableSuccess)
+//          .flatMap(
+//            _ =>
+//              socket.read.map { r =>
+//                r match {
+//                  case ok: Ok =>
+//                    succeed
+//                  case _ =>
+//                    fail
+//                }
+//              }
+//          )
+//      }
+//      "create table fail" in withSocket { socket =>
+//        socket
+//          .write(createTableFail)
+//          .flatMap(
+//            _ =>
+//              socket.read.attempt.map { r =>
+//                r match {
+//                  case Left(e: Err) =>
+//                    e.errcode shouldEqual 1050
+//                  case _ =>
+//                    fail
+//                }
+//              }
+//          )
+//      }
     }
-    "insert" - {
-      "insert user success" in withSocket { socket =>
-        socket
-          .write(insertUserSuccess)
-          .flatMap(
-            _ =>
-              socket.read.map { r =>
-                r match {
-                  case ok: Ok =>
-                    succeed
-                  case _ =>
-                    fail
-                }
-              }
-          )
-      }
-      "insert user fail" in withSocket { socket =>
-        socket
-          .write(insertUserFail)
-          .flatMap(
-            _ =>
-              socket.read.attempt.map { r =>
-                r match {
-                  case Left(e: Err) =>
-                    e.errcode shouldEqual 1048
-                  case _ =>
-                    fail
-                }
-              }
-          )
-      }
-    }
+//    "insert" - {
+//      "insert user success" in withSocket { socket =>
+//        socket
+//          .write(insertUserSuccess)
+//          .flatMap(
+//            _ =>
+//              socket.read.map { r =>
+//                r match {
+//                  case ok: Ok =>
+//                    succeed
+//                  case _ =>
+//                    fail
+//                }
+//              }
+//          )
+//      }
+//      "insert user fail" in withSocket { socket =>
+//        socket
+//          .write(insertUserFail)
+//          .flatMap(
+//            _ =>
+//              socket.read.attempt.map { r =>
+//                r match {
+//                  case Left(e: Err) =>
+//                    e.errcode shouldEqual 1048
+//                  case _ =>
+//                    fail
+//                }
+//              }
+//          )
+//      }
+//    }
     "select" - {
       "select user success" in withSocket { socket =>
         socket

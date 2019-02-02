@@ -17,8 +17,8 @@ import protocol.server._
 
 class FrameEncoder[F[_]: ConcurrentEffect](
   config: MySQLSocketConfig,
-  ctxRef: Ref[F, ChannelContext])
-    extends ChannelOutboundHandlerAdapter {
+  ctxRef: Ref[F, ChannelContext]
+) extends ChannelOutboundHandlerAdapter {
 
   private val FSM = new StateMachine[F](config)
 
@@ -34,10 +34,13 @@ class FrameEncoder[F[_]: ConcurrentEffect](
       ctx.flush()
     }
     val buf = ctx.alloc().buffer(1024)
-    val charset = CharsetMap.of(config.charset)
     msg match {
       case m: Message =>
-        ctxRef.modifyState(FSM.send(m, buf)).map(sendPackets).toIO.unsafeRunSync()
+        ctxRef
+          .modifyState(FSM.send(m, buf))
+          .map(sendPackets)
+          .toIO
+          .unsafeRunSync()
     }
   }
 }
@@ -62,7 +65,9 @@ class FrameDecoder[F[_]](
     if (PacketDecoder.isReady(in)) {
       val msg = ctxRef.get.flatMap {
         case ChannelContext.WaitInit =>
-          F.fromEither(Packet.decode[ServerMessage](in, Charset.defaultCharset()))
+          F.fromEither(
+            Packet.decode[ServerMessage](in, Charset.defaultCharset())
+          )
         case ChannelContext.Inited(cs, _) =>
           F.fromEither(Packet.decode[ServerMessage](in, cs))
       }

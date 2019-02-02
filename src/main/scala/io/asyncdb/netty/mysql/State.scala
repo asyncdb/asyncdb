@@ -25,8 +25,6 @@ object ChannelState {
     object WaitAuthResult    extends Handshake
   }
 
-
-
   sealed trait QueryState
   object Query {
     case class WaitColumnDef(defs: Vector[ColumnDef]) extends ChannelState
@@ -53,9 +51,9 @@ object ChannelContext {
     val state = ChannelState.Handshake.WaitHandshakeInit
   }
 
-  case class Inited(serverCharset: Charset, state: ChannelState) extends ChannelContext
+  case class Inited(serverCharset: Charset, state: ChannelState)
+      extends ChannelContext
 }
-
 
 class StateMachine[F[_]](config: MySQLSocketConfig)(
   implicit F: MonadError[F, Throwable]
@@ -67,17 +65,19 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
   type ReceiveTransition =
     Function[ServerMessage, State[ChannelContext, ChannelState.Result]]
 
-  type SendTransition = Function2[Message, ByteBuf, State[ChannelContext, Vector[ByteBuf]]]
+  type SendTransition =
+    Function2[Message, ByteBuf, State[ChannelContext, Vector[ByteBuf]]]
 
   def send: SendTransition = { (msg, buf) =>
     val cs = CharsetMap.of(config.charset)
     State {
-      case ctx:ChannelContext.Inited =>
+      case ctx: ChannelContext.Inited =>
         (msg, ctx.state) match {
           case (q: HandshakeResponse, ChannelState.Handshake.WaitAuthResult) =>
             ctx -> Packet.encode(q, buf, cs, 1)
           case (q: Query, ChannelState.ReadyForCommand) =>
-            val nc = ctx.copy(state = ChannelState.Query.WaitColumnDef(Vector.empty))
+            val nc =
+              ctx.copy(state = ChannelState.Query.WaitColumnDef(Vector.empty))
             nc -> Packet.encode(q, buf, cs)
           case (m, s) =>
             throw new IllegalStateException(s"IllegalStateException ${m}, ${s}")
@@ -96,16 +96,36 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
         case (ChannelContext.WaitInit, m: HandshakeInit) =>
           val out = HandshakeResponse(m, config)
           val r   = ChannelState.Result(Some(out), None)
-          val nc  = ChannelContext.Inited(m.charset, ChannelState.Handshake.WaitAuthResult)
+          val nc = ChannelContext.Inited(
+            m.charset,
+            ChannelState.Handshake.WaitAuthResult
+          )
           nc -> r
-        case (ctx@ChannelContext.Inited(cs, ChannelState.Handshake.WaitAuthResult), m @ (_: Ok | _: Err)) =>
+        case (
+            ctx @ ChannelContext
+              .Inited(cs, ChannelState.Handshake.WaitAuthResult),
+            m @ (_: Ok | _: Err)
+            ) =>
           val nc = ctx.copy(
             state = ChannelState.ReadyForCommand
           )
           val outgoing = None
           val emit     = Some(m)
           (nc, ChannelState.Result(outgoing, emit))
-
+        case (
+            ctx @ ChannelContext
+              .Inited(cs, ChannelState.Query.WaitColumnDef(d)),
+            m @ (_: Ok | _: Err | _: ColumnDef)
+            ) =>
+          println("-----")
+          println(m)
+          val nc = ctx.copy(
+            state = ChannelState.ReadyForCommand
+          )
+          val outgoing = None
+          val emit     = Some(m)
+          (nc, ChannelState.Result(outgoing, emit))
+        case _ => ???
       }
     }
   }
