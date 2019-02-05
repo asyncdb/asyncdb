@@ -68,8 +68,8 @@ class FrameDecoder[F[_]](
           F.fromEither(
             Packet.decode[ServerMessage](in, Charset.defaultCharset())
           )
-        case ChannelContext.Inited(cs, _) =>
-          F.fromEither(Packet.decode[ServerMessage](in, cs))
+        case ChannelContext.Inited(cs, state) =>
+          F.fromEither(Packet.decode[ServerMessage](in, cs, state))
       }
 
       msg.flatMap { m =>

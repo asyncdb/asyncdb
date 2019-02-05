@@ -166,9 +166,10 @@ private[mysql] final class PacketDecoder[V](md: Decoder[V]) {
     }
   }
 
-  def decode(buf: ByteBuf, charset: Charset) = Either.catchNonFatal {
-    val payloads = payloadBufs(buf, buf.readerIndex(), Vector.empty)
-    val rawBuff  = Unpooled.wrappedBuffer(payloads.toArray: _*)
-    md.decode(rawBuff, charset)
-  }
+  def decode(buf: ByteBuf, charset: Charset, state: ChannelState) =
+    Either.catchNonFatal {
+      val payloads = payloadBufs(buf, buf.readerIndex(), Vector.empty)
+      val rawBuff  = Unpooled.wrappedBuffer(payloads.toArray: _*)
+      md.decode(rawBuff, charset)
+    }
 }

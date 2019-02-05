@@ -27,7 +27,11 @@ object ChannelState {
 
   sealed trait QueryState
   object Query {
-    case class WaitColumnDef(defs: Vector[ColumnDef]) extends ChannelState
+    case class WaitColumnData(
+      columnCount: Int = 0,
+      defs: Vector[ColumnDef] = Vector.empty,
+      rows: Vector[Any] = Vector.empty
+    ) extends ChannelState
   }
 
   /**
@@ -77,7 +81,7 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
             ctx -> Packet.encode(q, buf, cs, 1)
           case (q: Query, ChannelState.ReadyForCommand) =>
             val nc =
-              ctx.copy(state = ChannelState.Query.WaitColumnDef(Vector.empty))
+              ctx.copy(state = ChannelState.Query.WaitColumnData())
             nc -> Packet.encode(q, buf, cs)
           case (m, s) =>
             throw new IllegalStateException(s"IllegalStateException ${m}, ${s}")
@@ -114,11 +118,12 @@ class StateMachine[F[_]](config: MySQLSocketConfig)(
           (nc, ChannelState.Result(outgoing, emit))
         case (
             ctx @ ChannelContext
-              .Inited(cs, ChannelState.Query.WaitColumnDef(d)),
+              .Inited(
+                cs,
+                ChannelState.Query.WaitColumnData(columnCount, defs, rows)
+              ),
             m @ (_: Ok | _: Err | _: ColumnDef)
             ) =>
-          println("-----")
-          println(m)
           val nc = ctx.copy(
             state = ChannelState.ReadyForCommand
           )

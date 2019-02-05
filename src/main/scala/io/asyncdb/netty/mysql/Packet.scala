@@ -14,6 +14,10 @@ object Packet {
     PacketEncoder.encode(v, buf, cs, seq)
   }
 
-  def decode[V: Decoder](buf: ByteBuf, cs: Charset) =
-    PacketDecoder[V].decode(buf, cs)
+  def decode[V: Decoder](
+    buf: ByteBuf,
+    cs: Charset,
+    state: ChannelState = ChannelState.Handshake.WaitHandshakeInit
+  ) =
+    PacketDecoder[V].decode(buf, cs, state)
 }
