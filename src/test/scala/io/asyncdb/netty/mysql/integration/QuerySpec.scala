@@ -90,16 +90,15 @@ class QuerySpec extends SocketSpec {
       "select user success" in withSocket { socket =>
         socket
           .write(selectUserSuccess)
-          .flatMap(
-            _ =>
-              socket.read.map { r =>
-                r match {
-                  case ok: Ok =>
-                    succeed
-                  case _ =>
-                    fail
-                }
+          .flatMap(_ =>
+            socket.read.map { r =>
+              r match {
+                case ok: Ok =>
+                  succeed
+                case _ =>
+                  fail
               }
+            }
           )
       }
     }

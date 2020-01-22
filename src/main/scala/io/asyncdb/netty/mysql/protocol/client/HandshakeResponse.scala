@@ -29,10 +29,9 @@ object HandshakeResponse {
         config.database.fold(base)(_ => base + Cap.ConnectWithDB)
       withDatabase
     }
-    val passBytes = config.password.fold(Array.empty[Byte])(
-      p =>
-        Auth
-          .nativePassword(init.authPluginData, p, CharsetMap.of(config.charset))
+    val passBytes = config.password.fold(Array.empty[Byte])(p =>
+      Auth
+        .nativePassword(init.authPluginData, p, CharsetMap.of(config.charset))
     )
     new HandshakeResponse(
       clientFlag = cap.mask,

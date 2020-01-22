@@ -35,7 +35,7 @@ object ServerMessage {
 
       def decode(buf: ByteBuf, charset: Charset) = {
         val head = buf.getByte(buf.readerIndex())
-        (head: @switch) match {
+        head match {
           case Headers.HandshakeV10 =>
             decodeMsg[HandshakeInit](buf, charset)
           case Headers.Err =>
