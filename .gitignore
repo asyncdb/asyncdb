@@ -7,3 +7,4 @@ GPATH
 .idea
 .idea/
 .metals/
+project/metals.sbt
